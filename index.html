@@ -288,8 +288,18 @@
                             return;
                         }
 
-                        // Sort files numerically then alphabetically
+                        // --- SORTING LOGIC ---
+                        // Sort files numerically then alphabetically by name.
+                        // NOTE: Sorting by *creation date* is not directly feasible with the basic
+                        // GitHub Contents API used here. It doesn't return file creation/commit dates
+                        // in the directory listing. Fetching this data would require many additional
+                        // API calls (one per file), significantly slowing down the page and potentially
+                        // hitting API rate limits.
+                        // RECOMMENDATION: Use a filename convention (e.g., '01-name.html', '02-name.html'
+                        // or 'YYYY-MM-DD-name.html') to control the sort order reliably.
+                        // The `localeCompare` function with `numeric: true` handles number prefixes well.
                         htmlFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+                        // ---------------------
 
                         htmlFiles.forEach((file, index) => {
                             const listItem = document.createElement('li');
@@ -304,7 +314,9 @@
                             if (title.match(/^(Chapter|Tutorial)\s*(\d+)/i)) {
                                 // Already formatted well, do nothing extra for now
                             } else if (title.match(/^(\d+)\s*/)) {
-                                title = title.replace(/^(\d+)\s*/, `${sectionTitle.slice(0,-1)} $1 `); // e.g., "10 Intro" -> "Tutorial 10 Intro"
+                                // Attempt to prepend the section type if only a number is found
+                                const sectionSingular = sectionTitle.endsWith('s') ? sectionTitle.slice(0,-1) : sectionTitle; // e.g. "Chapters" -> "Chapter"
+                                title = title.replace(/^(\d+)\s*/, `${sectionSingular} $1 `); // e.g., "10 Intro" -> "Chapter 10 Intro"
                             } else {
                                 // Keep the capitalized title if no number prefix found
                             }
