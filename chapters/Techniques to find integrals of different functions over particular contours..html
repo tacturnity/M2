@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;"> <!-- Default font size set to 10px -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Techniques to find integrals of different functions over particular contours.</title> <!-- CHANGED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: {
+            ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); }
+          }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes for Animations (FadeIn) */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Fonts & Base Styling */
+        body {
+            font-family: 'Roboto Mono', monospace;
+            color: #e0e0e0;
+            line-height: 1.7;
+            padding: 25px;
+            background-color: #1a1a1a;
+            min-height: 100vh;
+            font-size: var(--base-font-size); /* Controlled by JS */
+            transition: font-size 0.2s ease-in-out; /* Default smooth transition */
+            padding-bottom: 80px; /* Space for controls */
+            overflow-x: hidden;
+        }
+        /* Class to disable transition during rapid changes (e.g., hold) */
+        body.no-font-transition {
+            transition: none !important;
+        }
+
+        /* Headings */
+        h1, h2 { font-family: 'Roboto Mono', monospace; text-align: center; margin-bottom: 1.5em; }
+        h1 { font-size: 2.4em; color: #ffffff; font-weight: 700; padding-bottom: 12px; margin-top: 1.5em; margin-bottom: 1.5em; border-bottom: 2px solid #ffffff; animation: fadeIn 0.8s ease-out both; animation-delay: 0.1s; letter-spacing: -0.5px; }
+        h2 { font-size: 1.6em; color: #cccccc; font-weight: 500; margin-top: 30px; margin-bottom: 1.5em; border-bottom: 1px solid #555555; padding-bottom: 5px; animation: fadeIn 0.8s ease-out both; animation-delay: 0.3s; }
+        h3 { font-size: 1.2em; color: #bdbdbd; font-weight: 500; margin-top: 1.8em; margin-bottom: 0.8em; padding-bottom: 3px; border-bottom: 1px dotted #444; }
+
+        /* Main Content Area */
+        main { max-width: 800px; margin: 40px auto; background-color: rgba(30, 30, 30, 0.85); padding: 35px 45px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.1); animation: fadeIn 0.8s ease-out both; animation-delay: 0.2s; }
+        /* Paragraph and List styling */
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; list-style: disc; margin-bottom: 1em; }
+        ol { list-style: decimal; }
+        li { margin-bottom: 8px; font-size: inherit; }
+        strong { font-weight: 500; color: #ffffff; }
+        em { font-style: italic; color: #ababab; } /* Style for italic/emphasis */
+        blockquote { margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(40, 40, 40, 0.7); border-left: 4px solid #666; color: #d0d0d0; }
+        blockquote p { margin-bottom: 0.5em; }
+        blockquote h4 { font-size: 1.1em; color: #cacaca; margin-bottom: 0.5em; padding-bottom: 2px; border-bottom: 1px dotted #555; } /* Style for headings inside blockquotes */
+
+
+        /* Formula Container Styling (with horizontal scroll) */
+        .formula-container {
+            margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(45, 45, 45, 0.9);
+            border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-x: auto; overflow-y: hidden; /* Horizontal scroll, no vertical */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            cursor: pointer; color: #e0e0e0; border-left: 4px solid transparent;
+            font-family: 'Roboto Mono', monospace; position: relative; white-space: nowrap;
+        }
+        .formula-container:hover { background-color: rgba(60, 60, 60, 0.95); border-left-color: #a6e3a1; border-color: rgba(166, 227, 161, 0.5); }
+        .formula-container.copied { background-color: rgba(166, 227, 161, 0.2); border-color: #a6e3a1; border-left-color: #a6e3a1; }
+        /* Optional Scrollbar Style */
+        .formula-container::-webkit-scrollbar { height: 8px; }
+        .formula-container::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.5); border-radius: 4px; }
+        .formula-container::-webkit-scrollbar-thumb { background-color: #888; border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        .formula-container::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
+        /* MathJax display style */
+        .formula-container mjx-container[display="true"] { margin: 0.5em 0 !important; text-align: left !important; display: inline-block; vertical-align: middle; }
+
+        /* Footer Styling */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both; animation-delay: 0.7s; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+        /* Font Control Icons CSS */
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: #a6e3a1; }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Techniques to find integrals of different functions over particular contours.</h1> <!-- EDITED THIS LINE -->
+    </header>
+
+    <main>
+        <!-- START OF PASTED CONTENT -->
+
+        <h2>Section 46: Cauchy-Goursat Theorem</h2>
+
+        <h3>Core Idea</h3>
+        <p>This theorem provides conditions under which the integral of a complex function $f(z)$ around a <strong>simple closed contour</strong> $C$ is zero. This is a fundamental result in complex analysis.</p>
+
+        <h3>Recall</h3>
+        <p>We already know that if $f(z)$ has an antiderivative in a domain $D$, then $\int_C f(z) dz = 0$ for any closed contour $C$ in $D$. The Cauchy-Goursat theorem gives <strong>different</strong> conditions for this integral to be zero, focusing on the analyticity of $f(z)$.</p>
+
+        <h3>Setup</h3>
+        <ul>
+            <li>$C$: A simple closed contour (doesn't cross itself), oriented positively (counterclockwise). Let its parameterization be $z(t)$ for $a \le t \le b$.</li>
+            <li>$f(z)$: A function assumed to be <strong>analytic</strong> at all points <strong>inside</strong> and <strong>on</strong> the contour $C$.</li>
+        </ul>
+
+        <h3>Connecting to Real Integrals</h3>
+        <p>The definition of the complex integral is:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C f(z) dz = \\int_a^b f[z(t)] z\'(t) dt}')"
+             data-latex="\int_C f(z) dz = \int_a^b f[z(t)] z'(t) dt \quad (Eq 1)"
+             title="Click to copy LaTeX">
+             $$ \int_C f(z) dz = \int_a^b f[z(t)] z'(t) dt \quad (Eq 1) $$
+        </div>
+        <p>If we write $f(z) = u(x, y) + iv(x, y)$ and $dz = dx + i dy$ (derived from $z'(t)dt = (x'(t) + iy'(t))dt = dx + i dy$), we can expand the integral into real line integrals:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C f(z) dz = \\int_C (u + iv)(dx + i dy) = \\int_C (u dx - v dy) + i \\int_C (v dx + u dy)}')"
+             data-latex="\int_C f(z) dz = \int_C (u + iv)(dx + i dy) = \int_C (u dx - v dy) + i \int_C (v dx + u dy) \quad (Eq 3)"
+             title="Click to copy LaTeX">
+             $$ \int_C f(z) dz = \int_C (u + iv)(dx + i dy) = \int_C (u dx - v dy) + i \int_C (v dx + u dy) \quad (Eq 3) $$
+        </div>
+
+        <h3>Initial Proof Idea (Cauchy's original version)</h3>
+        <ol>
+            <li>Assume $f'(z)$ is also continuous (this assumption will be removed by Goursat).</li>
+            <li>This continuity implies the first partial derivatives of $u$ and $v$ ($u_x, u_y, v_x, v_y$) are continuous.</li>
+            <li>Apply <strong>Green's Theorem</strong> to the real line integrals in Eq 3. Green's Theorem states: $\int_C P dx + Q dy = \iint_R (Q_x - P_y) dA$, where $R$ is the region inside $C$.
+                <ul>
+                    <li>For the real part: $P = u$, $Q = -v$. So, $\int_C u dx - v dy = \iint_R (-v_x - u_y) dA$.</li>
+                    <li>For the imaginary part: $P = v$, $Q = u$. So, $\int_C v dx + u dy = \iint_R (u_x - v_y) dA$.</li>
+                </ul>
+            </li>
+            <li>Thus,</li>
+        </ol>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C f(z) dz = \\iint_R (-v_x - u_y) dA + i \\iint_R (u_x - v_y) dA}')"
+             data-latex="\int_C f(z) dz = \iint_R (-v_x - u_y) dA + i \iint_R (u_x - v_y) dA \quad (Eq 4)"
+             title="Click to copy LaTeX">
+             $$ \int_C f(z) dz = \iint_R (-v_x - u_y) dA + i \iint_R (u_x - v_y) dA \quad (Eq 4) $$
+        </div>
+        <ol start="5">
+            <li>Since $f(z)$ is analytic, its real and imaginary parts $u$ and $v$ satisfy the <strong>Cauchy-Riemann equations</strong>: $u_x = v_y$ and $u_y = -v_x$.</li>
+            <li>Substituting these into the double integrals makes both integrands zero: $(-v_x - u_y) = (-v_x - (-v_x)) = 0$ and $(u_x - v_y) = (u_x - u_x) = 0$.</li>
+            <li>Therefore,</li>
+        </ol>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C f(z) dz = 0 + i \\cdot 0 = 0}')"
+             data-latex="\int_C f(z) dz = 0 + i \cdot 0 = 0 \quad (Eq 5)"
+             title="Click to copy LaTeX">
+             $$ \int_C f(z) dz = 0 + i \cdot 0 = 0 \quad (Eq 5) $$
+        </div>
+        <p><em>provided f is analytic and f' is continuous.</em></p>
+
+        <h3>Goursat's Contribution</h3>
+        <p>Goursat later proved that the condition "f' is continuous" is not necessary. Analyticity alone is sufficient.</p>
+
+        <h3>Cauchy-Goursat Theorem (Final Form)</h3>
+        <blockquote>
+             <p>If a function $f$ is <strong>analytic</strong> at all points interior to and on a <strong>simple closed contour</strong> $C$, then</p>
+             <div class="formula-container"
+                  onclick="copyFormulaLatex(this, '\\color{white}{\\int_C f(z) dz = 0}')"
+                  data-latex="\int_C f(z) dz = 0"
+                  title="Click to copy LaTeX">
+                  $$ \int_C f(z) dz = 0 $$
+             </div>
+        </blockquote>
+
+        <h3>Note</h3>
+        <p>Once the integral is zero, the direction (positive or negative orientation) doesn't matter, since $\int_{-C} f(z) dz = - \int_C f(z) dz = -0 = 0$.</p>
+
+        <h3>Example (Page 151)</h3>
+        <ul>
+            <li>If $C$ is any simple closed contour, then</li>
+        </ul>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\exp(z^3) dz = 0}')"
+             data-latex="\int_C \exp(z^3) dz = 0"
+             title="Click to copy LaTeX">
+             $$ \int_C \exp(z^3) dz = 0 $$
+        </div>
+        <ul>
+            <li><strong>Reason:</strong> The function $f(z) = \exp(z^3)$ is analytic <em>everywhere</em> in the complex plane (it's an entire function). Therefore, it's analytic inside and on <em>any</em> simple closed contour $C$, satisfying the theorem's conditions.</li>
+        </ul>
+
+        <h2>Section 47: Proof of the Cauchy-Goursat Theorem</h2>
+        <p><em>(This section provides the proof without assuming f' is continuous. The details are quite involved, focusing on the definition of the derivative. You might not need to reproduce the proof, but understanding the strategy is useful.)</em></p>
+
+        <h3>Strategy</h3>
+        <p>The proof cleverly subdivides the region $R$ inside $C$ into many small squares and partial squares. It then shows that the integral over the boundary of each small piece is very small, and when summed up, the contributions from interior boundaries cancel out, leaving only the integral over $C$, which must then approach zero.</p>
+
+        <h3>Key Lemma</h3>
+        <p>For any $\epsilon > 0$, the region $R$ (points inside and on $C$) can be covered by a finite number of squares/partial squares, such that within each square $j$, there's a point $z_j$ where the inequality $| [f(z) - f(z_j)] / (z - z_j) - f'(z_j) | < \epsilon$ holds for all $z \neq z_j$ in that square.</p>
+        <p><em>(Proof of Lemma Sketch): This relies on the definition of the derivative $f'(z_j)$. If the lemma were false for some square, you could keep subdividing it. This creates a nested sequence of squares converging to a point $z_0$ within $R$. Since $f$ is analytic at $z_0$, the definition of the derivative *must* hold in a small neighborhood, contradicting the assumption that no such $z_j$ existed in the nested squares.</em></p>
+
+        <h3>Proof Steps</h3>
+        <ol>
+            <li>Define a helper function $\delta_j(z)$ for each square $j$: $\delta_j(z) = [f(z) - f(z_j)] / (z - z_j) - f'(z_j)$ for $z \neq z_j$, and $\delta_j(z_j) = 0$. By the Lemma, $|\delta_j(z)| < \epsilon$. $\delta_j(z)$ is continuous within its square.</li>
+            <li>Rewrite $f(z)$ using $\delta_j(z)$: $f(z) = f(z_j) + f'(z_j)(z - z_j) + \delta_j(z)(z - z_j)$.</li>
+            <li>Integrate $f(z)$ over $C_j$, the boundary of square $j$: $\int_{C_j} f(z) dz = \int_{C_j} [f(z_j) + f'(z_j)(z - z_j)] dz + \int_{C_j} \delta_j(z)(z - z_j) dz$.</li>
+            <li>The first integral is zero because $f(z_j) + f'(z_j)(z - z_j)$ has an antiderivative (it's a linear function of z). So,</li>
+        </ol>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_{C_j} f(z) dz = \\int_{C_j} (z - z_j)\\delta_j(z) dz}')"
+             data-latex="\int_{C_j} f(z) dz = \int_{C_j} (z - z_j)\delta_j(z) dz \quad (Eq 7)"
+             title="Click to copy LaTeX">
+             $$ \int_{C_j} f(z) dz = \int_{C_j} (z - z_j)\delta_j(z) dz \quad (Eq 7) $$
+        </div>
+        <ol start="5">
+            <li>Sum these integrals over all squares $j=1...n$: $\sum \int_{C_j} f(z) dz$.</li>
+            <li><strong>Cancellation:</strong> Integrals along shared internal boundaries of adjacent squares cancel out because they are traversed in opposite directions (See Fig 57). The only parts that remain are those that coincide with the original contour $C$.</li>
+            <li>Therefore,</li>
+        </ol>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C f(z) dz = \\sum_{j=1}^n \\int_{C_j} (z - z_j)\\delta_j(z) dz}')"
+             data-latex="\int_C f(z) dz = \sum_{j=1}^n \int_{C_j} (z - z_j)\delta_j(z) dz \quad (Eq \text{ before } 8)"
+             title="Click to copy LaTeX">
+             $$ \int_C f(z) dz = \sum_{j=1}^n \int_{C_j} (z - z_j)\delta_j(z) dz \quad (Eq \text{ before } 8) $$
+        </div>
+        <ol start="8">
+            <li><strong>Bounding the Integral:</strong>
+                <ul>
+                    <li>On square $j$, $|z - z_j| < \sqrt{2} s_j$ (where $s_j$ is side length).</li>
+                    <li>$|\delta_j(z)| < \epsilon$.</li>
+                    <li>Length of $C_j$ is $4s_j$ (full square) or $\le 4s_j + L_j$ (partial square, $L_j$ is arc length along $C$).</li>
+                    <li>Using the integral bound ($|\int g dz| \le \text{Max}|g| \times \text{Length}$): $|\int_{C_j} (z - z_j)\delta_j(z) dz| < (\sqrt{2} s_j \epsilon) \times (\text{Length of } C_j)$. This leads to bounds like $4\sqrt{2} A_j \epsilon$ for full squares (where $A_j = s_j^2$) and $< 4\sqrt{2} A_j \epsilon + \sqrt{2} S L_j \epsilon$ for partial squares (where $S$ is the side of a large bounding box). (Eq 10, 11).</li>
+                </ul>
+            </li>
+            <li>Summing the bounds gives $|\int_C f(z) dz| < (\text{Constant related to total area and length}) \times \epsilon$.</li>
+            <li><strong>Conclusion:</strong> Since $\epsilon$ can be made arbitrarily small, and $\int_C f(z) dz$ is a fixed value independent of $\epsilon$, the only possibility is $\int_C f(z) dz = 0$.</li>
+        </ol>
+
+        <h2>Section 48: Simply Connected Domains</h2>
+
+        <h3>Definition</h3>
+        <p>A domain $D$ is <strong>simply connected</strong> if every simple closed contour within $D$ encloses <em>only</em> points that are also in $D$. (Think of a disk - no holes). An annulus (ring shape) is <em>not</em> simply connected.</p>
+
+        <h3>Extension of Cauchy-Goursat</h3>
+        <blockquote>
+             <h4>Theorem</h4>
+             <p>If $f$ is analytic throughout a <strong>simply connected domain</strong> $D$, then $\int_C f(z) dz = 0$ for <em>every</em> closed contour $C$ (simple or not) lying in $D$.</p>
+        </blockquote>
+        <p><em>(Reason for self-intersecting case): A self-intersecting contour (with finite intersections) can be broken down into a finite number of simple closed contours (Fig 58). The integral over the original contour is the sum of integrals over the simple ones, each of which is zero by Cauchy-Goursat.</em></p>
+
+        <h3>Important Corollary</h3>
+        <blockquote>
+             <p>A function $f$ that is analytic throughout a <strong>simply connected domain</strong> $D$ must have an <strong>antiderivative</strong> everywhere in $D$.</p>
+        </blockquote>
+        <p><em>(Reason): We know (from Sec 44, not shown here) that if $\int_C f(z) dz = 0$ for all closed contours in $D$, then $f$ has an antiderivative in $D$. The theorem above guarantees this condition.</em></p>
+
+        <h3>Example (Page 157-158)</h3>
+        <ul>
+            <li>Let $C$ be any closed contour in the open disk $|z| < 2$. Evaluate $\int_C [z e^z / (z^2 + 9)^5] dz$.</li>
+            <li><strong>Solution:</strong> The domain $D = \{z | |z| < 2\}$ is simply connected. The function $f(z) = z e^z / (z^2 + 9)^5$ is analytic except where $z^2 + 9 = 0$, i.e., $z = \pm 3i$. Both $3i$ and $-3i$ are <em>outside</em> the disk $|z| < 2$. Therefore, $f(z)$ is analytic throughout the simply connected domain $D$. By the theorem, the integral is $0$.</li>
+        </ul>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\frac{z e^z}{(z^2 + 9)^5} dz = 0}')"
+             data-latex="\int_C \frac{z e^z}{(z^2 + 9)^5} dz = 0"
+             title="Click to copy LaTeX">
+             $$ \int_C \frac{z e^z}{(z^2 + 9)^5} dz = 0 $$
+        </div>
+
+        <h2>Section 49: Multiply Connected Domains</h2>
+
+        <h3>Definition</h3>
+        <p>A domain that is not simply connected is <strong>multiply connected</strong> (it has one or more "holes").</p>
+
+        <h3>Adaptation of Cauchy-Goursat</h3>
+        <blockquote>
+            <h4>Theorem</h4>
+            <p>Suppose:</p>
+            <ol type="a">
+                <li>$C$ is a simple closed contour, oriented counterclockwise.</li>
+                <li>$C_1, C_2, ..., C_n$ are simple closed contours interior to $C$, oriented clockwise, which are disjoint and whose interiors have no points in common.</li>
+                <li>$f(z)$ is analytic on all these contours and throughout the multiply connected domain $D$ consisting of points inside $C$ but exterior to each $C_k$.</li>
+            </ol>
+            <p>Then:</p>
+        </blockquote>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C f(z) dz + \\sum_{k=1}^n \\int_{C_k} f(z) dz = 0}')"
+             data-latex="\int_C f(z) dz + \sum_{k=1}^n \int_{C_k} f(z) dz = 0"
+             title="Click to copy LaTeX">
+             $$ \int_C f(z) dz + \sum_{k=1}^n \int_{C_k} f(z) dz = 0 $$
+        </div>
+        <p><em>(Proof Idea): Introduce "cuts" (paths $L_k$) connecting $C$ to $C_1$, $C_1$ to $C_2$, etc. (Fig 60). This creates simply connected regions (like $\Gamma_1, \Gamma_2$). Apply Cauchy-Goursat to these regions. The integrals along the cuts cancel out when added, leaving the integrals along $C$ (CCW) and all $C_k$ (CW).</em></p>
+
+        <h3>Corollary (Principle of Deformation of Paths)</h3>
+        <blockquote>
+             <p>Let $C_1$ and $C_2$ be positively oriented (CCW) simple closed contours, with $C_1$ interior to $C_2$. If $f$ is analytic in the closed region between $C_1$ and $C_2$ (including on the contours), then</p>
+        </blockquote>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_{C_1} f(z) dz = \\int_{C_2} f(z) dz}')"
+             data-latex="\int_{C_1} f(z) dz = \int_{C_2} f(z) dz"
+             title="Click to copy LaTeX">
+             $$ \int_{C_1} f(z) dz = \int_{C_2} f(z) dz $$
+        </div>
+        <p><em>(Reason): Apply the theorem with $C = C_2$ (CCW) and $C_1$ but oriented *clockwise* ($-C_1$). The theorem gives $\int_{C_2} f(z) dz + \int_{-C_1} f(z) dz = 0$. Since $\int_{-C_1} f(z) dz = -\int_{C_1} f(z) dz$, this becomes $\int_{C_2} f(z) dz - \int_{C_1} f(z) dz = 0$.</em></p>
+        <p><strong>Significance:</strong> This means we can deform the contour of integration through any region where $f$ is analytic without changing the integral's value.</p>
+
+        <h3>Example (Page 160)</h3>
+        <ul>
+            <li>Show $\int_C dz/z = 2\pi i$ where $C$ is <em>any</em> positively oriented simple closed contour surrounding the origin.</li>
+            <li><strong>Solution:</strong> Let $f(z) = 1/z$. This is analytic everywhere except at $z=0$. Let $C_0$ be a small circle centered at the origin, entirely inside $C$, oriented positively. Since $f(z)$ is analytic in the region between $C_0$ and $C$, the Principle of Deformation of Paths applies.</li>
+        </ul>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\frac{dz}{z} = \\int_{C_0} \\frac{dz}{z}}')"
+             data-latex="\int_C \frac{dz}{z} = \int_{C_0} \frac{dz}{z}"
+             title="Click to copy LaTeX">
+             $$ \int_C \frac{dz}{z} = \int_{C_0} \frac{dz}{z} $$
+        </div>
+        <ul>
+             <li>We know from a previous calculation (Example 2, Sec 42, not shown here but assumed known) that $\int_{C_0} dz/z = 2\pi i$.</li>
+             <li>Therefore,</li>
+        </ul>
+         <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\frac{dz}{z} = 2\\pi i}')"
+             data-latex="\int_C \frac{dz}{z} = 2\pi i"
+             title="Click to copy LaTeX">
+             $$ \int_C \frac{dz}{z} = 2\pi i $$
+        </div>
+        <ul>
+             <li>for any such contour $C$.</li>
+        </ul>
+
+        <p><em>(Skipping Exercises on pp. 160-163)</em></p>
+
+        <h2>Section 50: Cauchy Integral Formula</h2>
+
+        <h3>Core Idea</h3>
+        <p>This formula is incredibly powerful. It shows that the value of an analytic function at any point <em>inside</em> a contour is completely determined by the function's values <em>on</em> the contour.</p>
+
+        <h3>Theorem (Cauchy Integral Formula)</h3>
+        <blockquote>
+             <p>Let $f$ be analytic everywhere inside and on a simple closed contour $C$ (positively oriented). If $z_0$ is any point <em>interior</em> to $C$, then:</p>
+        </blockquote>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{f(z_0) = \\frac{1}{2\\pi i} \\int_C \\frac{f(z)}{z - z_0} dz}')"
+             data-latex="f(z_0) = \frac{1}{2\pi i} \int_C \frac{f(z)}{z - z_0} dz \quad (Eq 1)"
+             title="Click to copy LaTeX">
+             $$ f(z_0) = \frac{1}{2\pi i} \int_C \frac{f(z)}{z - z_0} dz \quad (Eq 1) $$
+        </div>
+
+        <h3>Alternative Form (for evaluating integrals)</h3>
+        <blockquote>
+             <p>$\int_C \frac{f(z)}{z - z_0} dz = 2\pi i f(z_0)$</p>
+        </blockquote>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\frac{f(z)}{z - z_0} dz = 2\\pi i f(z_0)}')"
+             data-latex="\int_C \frac{f(z)}{z - z_0} dz = 2\pi i f(z_0) \quad (Eq 2)"
+             title="Click to copy LaTeX">
+             $$ \int_C \frac{f(z)}{z - z_0} dz = 2\pi i f(z_0) \quad (Eq 2) $$
+        </div>
+
+        <h3>How to Use Eq 2</h3>
+        <ol>
+            <li>Identify the contour $C$ and the point $z_0$ inside $C$.</li>
+            <li>Identify the function $f(z)$ by looking at the numerator part of the integrand that is <em>not</em> $1/(z-z_0)$.</li>
+            <li>Check if this $f(z)$ is analytic everywhere inside and on $C$.</li>
+            <li>If yes, the integral is simply $2\pi i$ times the value of $f(z)$ evaluated at $z_0$.</li>
+        </ol>
+
+        <h3>Example (Page 164)</h3>
+        <ul>
+            <li>Evaluate $\int_C \frac{z}{(9 - z^2)(z + i)} dz$ where $C$ is the circle $|z| = 2$ (positively oriented).</li>
+            <li><strong>Solution:</strong>
+                <ol>
+                    <li>$C$ is $|z|=2$. The singularities of the integrand are where $(9-z^2)(z+i) = 0$, i.e., $z = \pm 3$ and $z = -i$. Only $z_0 = -i$ is inside $C$ (since $|-i|=1 < 2$).</li>
+                    <li>Rewrite the integrand in the form $f(z) / (z - z_0)$: $\frac{[z / (9 - z^2)]}{(z - (-i))}$.</li>
+                    <li>So, $f(z) = z / (9 - z^2)$.</li>
+                    <li>Is $f(z)$ analytic inside and on $|z|=2$? The singularities of $f(z)$ are at $z = \pm 3$, which are outside $|z|=2$. Yes, $f(z)$ is analytic inside and on $C$.</li>
+                    <li>Apply the formula: $\int_C \dots dz = 2\pi i f(-i) = 2\pi i \left[ \frac{-i}{9 - (-i)^2} \right] = 2\pi i \left[ \frac{-i}{9 - (-1)} \right] = 2\pi i \left[ \frac{-i}{10} \right] = \frac{-2\pi i^2}{10} = \frac{2\pi}{10} = \frac{\pi}{5}$.</li>
+                </ol>
+             </li>
+        </ul>
+         <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\frac{z}{(9 - z^2)(z + i)} dz = \\frac{\\pi}{5}}')"
+             data-latex="\int_C \frac{z}{(9 - z^2)(z + i)} dz = \frac{\pi}{5}"
+             title="Click to copy LaTeX">
+             $$ \int_C \frac{z}{(9 - z^2)(z + i)} dz = \frac{\pi}{5} $$
+        </div>
+
+        <h3>Proof Idea</h3>
+        <p>Use the deformation principle. Deform $C$ to a very small circle $C_\rho$ around $z_0$.</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\frac{f(z)}{z - z_0} dz = \\int_{C_\\rho} \\frac{f(z)}{z - z_0} dz}')"
+             data-latex="\int_C \frac{f(z)}{z - z_0} dz = \int_{C_\rho} \frac{f(z)}{z - z_0} dz"
+             title="Click to copy LaTeX">
+             $$ \int_C \frac{f(z)}{z - z_0} dz = \int_{C_\rho} \frac{f(z)}{z - z_0} dz $$
+        </div>
+        <p>Then analyze the integral over $C_\rho$ as its radius $\rho$ shrinks.</p>
+
+        <h2>Section 51: Extension of the Cauchy Integral Formula</h2>
+
+        <h3>Core Idea</h3>
+        <p>The Cauchy Integral Formula can be extended to find integral representations for the <em>derivatives</em> of $f$ at $z_0$.</p>
+
+        <h3>Formula for f'(z)</h3>
+        <blockquote>
+             <p> $f'(z) = \frac{1}{2\pi i} \int_C \frac{f(s)}{(s - z)^2} ds$ </p>
+        </blockquote>
+         <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{f\'(z) = \\frac{1}{2\\pi i} \\int_C \\frac{f(s)}{(s - z)^2} ds}')"
+             data-latex="f'(z) = \frac{1}{2\pi i} \int_C \frac{f(s)}{(s - z)^2} ds \quad (Eq 2)"
+             title="Click to copy LaTeX">
+             $$ f'(z) = \frac{1}{2\pi i} \int_C \frac{f(s)}{(s - z)^2} ds \quad (Eq 2) $$
+        </div>
+        <p><em>(Derivation Sketch): Write the definition of $f'(z) = \lim_{\Delta z \to 0} [f(z+\Delta z) - f(z)] / \Delta z$. Use the Cauchy Integral Formula for $f(z+\Delta z)$ and $f(z)$. Combine the integrals and perform algebraic manipulation. Take the limit as $\Delta z \to 0$, showing that a remaining term goes to zero using bounds.</em></p>
+
+        <h3>General Formula for f<sup>(n)</sup>(z) (Extended Cauchy Integral Formula)</h3>
+        <blockquote>
+             <p> $f^{(n)}(z) = \frac{n!}{2\pi i} \int_C \frac{f(s)}{(s - z)^{n+1}} ds \quad (n = 0, 1, 2, \dots)$ </p>
+        </blockquote>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{f^{(n)}(z) = \\frac{n!}{2\\pi i} \\int_C \\frac{f(s)}{(s - z)^{n+1}} ds}')"
+             data-latex="f^{(n)}(z) = \frac{n!}{2\pi i} \int_C \frac{f(s)}{(s - z)^{n+1}} ds \quad (n = 0, 1, 2, \dots) \quad (Eq 5)"
+             title="Click to copy LaTeX">
+             $$ f^{(n)}(z) = \frac{n!}{2\pi i} \int_C \frac{f(s)}{(s - z)^{n+1}} ds \quad (n = 0, 1, 2, \dots) \quad (Eq 5) $$
+        </div>
+        <p>Note: For $n=0$, this reduces to the original Cauchy Integral Formula ($f^{(0)} = f$, $0! = 1$).</p>
+
+        <h3>Alternative Form (for evaluating integrals)</h3>
+         <blockquote>
+             <p> $\int_C \frac{f(z)}{(z - z_0)^{n+1}} dz = \frac{2\pi i}{n!} f^{(n)}(z_0)$ </p>
+        </blockquote>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\frac{f(z)}{(z - z_0)^{n+1}} dz = \\frac{2\\pi i}{n!} f^{(n)}(z_0)}')"
+             data-latex="\int_C \frac{f(z)}{(z - z_0)^{n+1}} dz = \frac{2\pi i}{n!} f^{(n)}(z_0) \quad (Eq 6)"
+             title="Click to copy LaTeX">
+             $$ \int_C \frac{f(z)}{(z - z_0)^{n+1}} dz = \frac{2\pi i}{n!} f^{(n)}(z_0) \quad (Eq 6) $$
+        </div>
+
+        <h3>How to Use Eq 6</h3>
+        <ol>
+            <li>Identify the contour $C$, the interior point $z_0$, and the exponent $n+1$. Determine $n$.</li>
+            <li>Identify the function $f(z)$ (the part of the numerator analytic inside/on C).</li>
+            <li>Check if $f(z)$ is analytic inside and on $C$.</li>
+            <li>If yes, calculate the $n$-th derivative of $f(z)$, i.e., $f^{(n)}(z)$.</li>
+            <li>Evaluate this derivative at $z_0$: $f^{(n)}(z_0)$.</li>
+            <li>The integral is $(2\pi i / n!) f^{(n)}(z_0)$.</li>
+        </ol>
+
+        <h3>Example 1 (Page 167-168)</h3>
+        <ul>
+            <li>Evaluate $\int_C \frac{\exp(2z)}{z^4} dz$ where $C$ is $|z|=1$ (positively oriented).</li>
+            <li><strong>Solution:</strong>
+                <ol>
+                    <li>$C$ is $|z|=1$. $z_0 = 0$ is inside. $n+1 = 4$, so $n = 3$.</li>
+                    <li>$f(z) = \exp(2z)$.</li>
+                    <li>$f(z)$ is entire, so analytic inside and on $C$. Yes.</li>
+                    <li>Calculate $f'''(z)$: $f'(z) = 2 \exp(2z)$, $f''(z) = 4 \exp(2z)$, $f'''(z) = 8 \exp(2z)$.</li>
+                    <li>Evaluate at $z_0=0$: $f'''(0) = 8 \exp(0) = 8$.</li>
+                    <li>Apply formula: $\int_C \dots dz = \frac{2\pi i}{3!} f'''(0) = \frac{2\pi i}{6} \times 8 = \frac{16\pi i}{6} = \frac{8\pi i}{3}$.</li>
+                </ol>
+             </li>
+        </ul>
+         <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\frac{\\exp(2z)}{z^4} dz = \\frac{8\\pi i}{3}}')"
+             data-latex="\int_C \frac{\exp(2z)}{z^4} dz = \frac{8\pi i}{3}"
+             title="Click to copy LaTeX">
+             $$ \int_C \frac{\exp(2z)}{z^4} dz = \frac{8\pi i}{3} $$
+        </div>
+
+        <h3>Example 2 (Page 168)</h3>
+        <p>Let $z_0$ be inside $C$.</p>
+        <ul>
+            <li>$\int_C \frac{dz}{z - z_0} = ?$
+                <ul><li>Here $f(z) = 1$, $n+1 = 1 \implies n=0$. $f^{(0)}(z_0) = f(z_0) = 1$.</li></ul>
+            </li>
+        </ul>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\frac{dz}{z - z_0} = \\frac{2\\pi i}{0!} \\cdot 1 = 2\\pi i}')"
+             data-latex="\int_C \frac{dz}{z - z_0} = \frac{2\pi i}{0!} \cdot 1 = 2\pi i"
+             title="Click to copy LaTeX">
+             $$ \int_C \frac{dz}{z - z_0} = \frac{2\pi i}{0!} \cdot 1 = 2\pi i $$
+        </div>
+        <ul>
+            <li>$\int_C \frac{dz}{(z - z_0)^{n+1}} = ?$ for $n = 1, 2, \dots$
+                <ul><li>Here $f(z) = 1$. $f'(z) = 0$, $f''(z) = 0$, ..., $f^{(n)}(z) = 0$ for $n \ge 1$.</li><li>So $f^{(n)}(z_0) = 0$.</li></ul>
+            </li>
+        </ul>
+         <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C \\frac{dz}{(z - z_0)^{n+1}} = \\frac{2\\pi i}{n!} \\cdot 0 = 0}')"
+             data-latex="\int_C \frac{dz}{(z - z_0)^{n+1}} = \frac{2\pi i}{n!} \cdot 0 = 0 \quad (n=1, 2, \dots)"
+             title="Click to copy LaTeX">
+             $$ \int_C \frac{dz}{(z - z_0)^{n+1}} = \frac{2\pi i}{n!} \cdot 0 = 0 \quad (n=1, 2, \dots) $$
+        </div>
+
+        <h2>Section 52: Some Consequences of the Extension</h2>
+
+        <h3>Theorem 1</h3>
+        <blockquote>
+             <p>If a function $f$ is analytic at a point $z_0$, then its derivatives of <strong>all orders</strong> ($f', f'', f'''$, ...) are also analytic at $z_0$.</p>
+        </blockquote>
+        <p><strong>Significance:</strong> Analyticity is a very strong condition. It implies infinite differentiability.</p>
+        <p><em>(Proof Idea): Analyticity at $z_0$ means $f$ is analytic in a small disk around $z_0$. The extended CIF gives an integral formula for $f'(z)$ for $z$ near $z_0$. This integral form can be shown to be differentiable (essentially by differentiating under the integral sign again), proving $f''$ exists and is analytic near $z_0$. Repeat infinitely.</em></p>
+
+        <h3>Corollary</h3>
+        <blockquote>
+             <p>If $f(z) = u(x, y) + iv(x, y)$ is analytic at $z = (x, y)$, then the component functions $u$ and $v$ have <strong>continuous partial derivatives of all orders</strong> at that point.</p>
+        </blockquote>
+        <p><em>(Reason): $f$ analytic $\implies f'$ analytic (by Thm 1) $\implies f'$ continuous. $f'(z) = u_x + iv_x = v_y - iu_y$. Continuity of $f'$ implies continuity of $u_x, v_x, v_y, u_y$. Apply the same logic to $f'', f'''$, etc., which involve higher-order partials.</em></p>
+
+        <h3>Theorem 2 (Morera's Theorem - Converse of Cauchy-Goursat)</h3>
+        <blockquote>
+             <p>Let $f$ be <strong>continuous</strong> on a domain $D$. If $\int_C f(z) dz = 0$ for <em>every</em> closed contour $C$ in $D$, then $f$ is <strong>analytic</strong> throughout $D$.</p>
+        </blockquote>
+        <p><em>(Proof Idea): The condition $\int_C f(z) dz = 0$ guarantees that $f$ has an antiderivative, say $F(z)$, which is analytic in $D$ (Sec 44 result). So $F'(z) = f(z)$. Since $F$ is analytic, its derivative $f$ must also be analytic (by Thm 1 of this section).</em></p>
+
+        <h3>Theorem 3 (Cauchy's Inequality)</h3>
+        <blockquote>
+             <p>Suppose $f$ is analytic inside and on a circle $C_R$ defined by $|z - z_0| = R$. If $M_R$ is the maximum value of $|f(z)|$ on $C_R$, then:</p>
+        </blockquote>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{|f^{(n)}(z_0)| \\le \\frac{n! M_R}{R^n}}')"
+             data-latex="|f^{(n)}(z_0)| \le \frac{n! M_R}{R^n} \quad (n = 1, 2, \dots) \quad (Eq 2)"
+             title="Click to copy LaTeX">
+             $$ |f^{(n)}(z_0)| \le \frac{n! M_R}{R^n} \quad (n = 1, 2, \dots) \quad (Eq 2) $$
+        </div>
+        <p><strong>Significance:</strong> Provides an upper bound on the magnitude of the derivatives of $f$ at the center of a circle, based on the maximum value of the function on the circle itself.</p>
+        <p><em>(Proof Idea): Start with the Extended Cauchy Integral Formula for $f^{(n)}(z_0)$ involving integration over $C_R$. Apply the standard integral bound: $|\int g dz| \le \text{Max}|g| \times \text{Length}$.
+             <ul>
+                 <li>Length of $C_R$ is $2\pi R$.</li>
+                 <li>On $C_R$, $|z - z_0| = R$.</li>
+                 <li>$|f(z) / (z - z_0)^{n+1}| = |f(z)| / |z - z_0|^{n+1} \le M_R / R^{n+1}$.</li>
+                 <li>Combine: $|f^{(n)}(z_0)| = |\frac{n!}{2\pi i} \int_{C_R} \dots dz| \le \frac{n!}{2\pi} \times (\frac{M_R}{R^{n+1}}) \times (2\pi R) = \frac{n! M_R}{R^n}$.</li>
+             </ul>
+        </em></p>
+
+        <p><em>(Skipping Exercises on p. 170)</em></p>
+
+        <!-- END OF PASTED CONTENT -->
+    </main>
+
+    <footer>
+        <!-- Optional: Add footer text if needed -->
+    </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div> <!-- Initial size display -->
+
+    <script>
+        // --- Formula Copy Function ---
+        function copyFormulaLatex(element, latexStringWithColor) {
+            if (!latexStringWithColor) {
+                console.error('No LaTeX data found passed to copy function.');
+                return;
+            }
+            // Extract the original LaTeX from data-latex attribute for copying
+            const originalLatex = element.getAttribute('data-latex');
+             if (!originalLatex) {
+                 console.error('No original LaTeX data found in data-latex attribute.');
+                 // Fallback to using the colored string if needed, but remove the color command
+                 latexStringWithColor = latexStringWithColor.replace('\\color{white}{', '').slice(0, -1);
+                 navigator.clipboard.writeText(latexStringWithColor).then(() => { /*...*/ }).catch(err => { /*...*/ });
+                 return; // Or handle fallback differently
+             }
+
+            navigator.clipboard.writeText(originalLatex).then(() => {
+                element.classList.add('copied');
+                const originalTitle = element.title;
+                element.title = 'Copied: ' + originalLatex; // Show what was copied
+                setTimeout(() => {
+                    element.classList.remove('copied');
+                    element.title = originalTitle; // Restore original title
+                 }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy LaTeX: ', err);
+                // Optionally provide user feedback about the failure
+                const originalTitle = element.title;
+                element.title = 'Copy failed!';
+                 setTimeout(() => { element.title = originalTitle; }, 1500);
+            });
+        }
+
+        // --- Font Size Control & Hold Functionality ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body; // Target body for transition class
+
+            // Configuration
+            let currentSize = 10; // Initial size set to 10px
+            const minSize = 10;
+            const maxSize = 28; // Adjust max size if needed
+            const step = 1;
+            let displayTimeout = null;
+            let holdTimeout = null;
+            let holdInterval = null;
+            const initialHoldDelay = 400; // ms before repeat starts
+            const repeatInterval = 100;  // ms between repeats while holding
+            const mathJaxDebounceDelay = 350; // ms to wait after last change before re-typesetting
+
+            // --- Debounce Function ---
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => { clearTimeout(timeout); func(...args); };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // --- Debounced MathJax Typesetting ---
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax");
+                    // Target the main content area for re-typesetting if possible
+                    const mainContent = document.querySelector('main');
+                    const targetElement = mainContent || bodyEl; // Fallback to body
+                    MathJax.typesetPromise([targetElement]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            // --- Update Font Size and Display ---
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px';
+                    display.classList.add('visible');
+
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => {
+                        display.classList.remove('visible');
+                        displayTimeout = null;
+                    }, 1500);
+
+                    // Don't queue MathJax immediately, wait for hold to potentially finish
+                    // queueMathJaxTypeset(); // Removed from here
+                    return true; // Indicate size changed
+                }
+                return false; // Indicate size hit limit
+            }
+
+            // --- Stop Holding Action ---
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition'); // Re-enable transition
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                // When holding stops, trigger MathJax update
+                queueMathJaxTypeset();
+            }
+
+            // --- Start Holding Action ---
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); // OPTIONAL: Disable transition during hold
+                updateFontSize(currentSize + direction * step); // Initial action
+                stopHolding(); // Clear previous timers before starting new ones
+
+                holdTimeout = setTimeout(() => {
+                    // After initial delay, start repeating
+                    holdInterval = setInterval(() => {
+                        if (!updateFontSize(currentSize + direction * step)) {
+                            stopHolding(); // Stop if size limit is reached
+                        }
+                    }, repeatInterval);
+                }, initialHoldDelay);
+            }
+
+            // --- Event Listeners ---
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                // Use 'pointerup' and 'pointerleave' for better touch/mouse handling
+                window.addEventListener('pointerup', stopHolding);
+                minusBtn.addEventListener('pointerleave', stopHolding);
+                plusBtn.addEventListener('pointerleave', stopHolding);
+
+                // Set initial state
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+                 // Initial MathJax typeset on load (after ready)
+                 if (window.MathJax) {
+                     MathJax.startup.promise.then(() => {
+                         console.log("Queueing initial MathJax typeset");
+                         queueMathJaxTypeset(); // Use the debounced version even initially
+                     });
+                 }
+            } else {
+                console.error("Font control elements not found!");
+            }
+
+            // --- Horizontal Scroll Redirect for Formula Containers ---
+             const formulaContainers = document.querySelectorAll('.formula-container');
+             formulaContainers.forEach(container => {
+                 container.addEventListener('wheel', function(event) {
+                     // Only act if the container is actually scrollable horizontally
+                     const isScrollableHorizontally = this.scrollWidth > this.clientWidth;
+                     // Only act if there's vertical scroll intent (deltaY) and not horizontal (deltaX)
+                     const isVerticalScroll = event.deltaY !== 0 && event.deltaX === 0;
+
+                     if (isScrollableHorizontally && isVerticalScroll) {
+                         event.preventDefault(); // Prevent the default vertical page scroll
+                         // Adjust scrollLeft based on deltaY. Might need scaling depending on desired sensitivity.
+                         this.scrollLeft += event.deltaY;
+                     }
+                     // If isScrollableHorizontally is false, or if it's already horizontal scroll (event.deltaX != 0),
+                     // the default behavior (vertical page scroll or horizontal container scroll) will occur.
+                 }, { passive: false }); // passive: false is needed to call preventDefault()
+             });
+             console.log("Horizontal scroll override applied to formula containers.");
+
+        });
+    </script>
+
+</body>
+</html>
