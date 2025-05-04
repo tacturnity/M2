@@ -566,26 +566,26 @@
      <div id="fontSizeDisplay">10px</div> <!-- Initial size display -->
 
     <script>
-        // --- Formula Copy Function ---
-        function copyFormulaLatex(element, latexStringWithColor) {
+            // --- Formula Copy Function (MODIFIED TO COPY WITH COLOR WRAPPER) ---
+            function copyFormulaLatex(element, latexStringWithColor) {
+            // Check if the colored string was actually passed
             if (!latexStringWithColor) {
-                console.error('No LaTeX data found passed to copy function.');
+                console.error('No LaTeX string (with color) found passed to copy function.');
+                // Optionally try to get data-latex as a last resort, or just fail
+                const fallbackLatex = element.getAttribute('data-latex');
+                if (fallbackLatex) {
+                    console.warn('Using fallback data-latex attribute content.');
+                    navigator.clipboard.writeText(fallbackLatex).then(() => { /*...*/ }).catch(err => { /*...*/ });
+                }
                 return;
             }
-            // Extract the original LaTeX from data-latex attribute for copying
-            const originalLatex = element.getAttribute('data-latex');
-             if (!originalLatex) {
-                 console.error('No original LaTeX data found in data-latex attribute.');
-                 // Fallback to using the colored string if needed, but remove the color command
-                 latexStringWithColor = latexStringWithColor.replace('\\color{white}{', '').slice(0, -1);
-                 navigator.clipboard.writeText(latexStringWithColor).then(() => { /*...*/ }).catch(err => { /*...*/ });
-                 return; // Or handle fallback differently
-             }
 
-            navigator.clipboard.writeText(originalLatex).then(() => {
+            // Use the string passed directly in the onclick attribute (which includes \color)
+            navigator.clipboard.writeText(latexStringWithColor).then(() => {
                 element.classList.add('copied');
-                const originalTitle = element.title;
-                element.title = 'Copied: ' + originalLatex; // Show what was copied
+                const originalTitle = element.title; // Keep the original hover text
+                // Update the title temporarily to show what was copied (including color)
+                element.title = 'Copied: ' + latexStringWithColor;
                 setTimeout(() => {
                     element.classList.remove('copied');
                     element.title = originalTitle; // Restore original title
