@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;"> <!-- Default font size set to 10px -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liouville's Theorem and the Fundamental Theorem of Algebra</title> <!-- UPDATED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: {
+            ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); }
+          }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes for Animations (FadeIn) */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Fonts & Base Styling */
+        body {
+            font-family: 'Roboto Mono', monospace;
+            color: #e0e0e0;
+            line-height: 1.7;
+            padding: 25px;
+            background-color: #1a1a1a;
+            min-height: 100vh;
+            font-size: var(--base-font-size); /* Controlled by JS */
+            transition: font-size 0.2s ease-in-out; /* Default smooth transition */
+            padding-bottom: 80px; /* Space for controls */
+            overflow-x: hidden;
+        }
+        /* Class to disable transition during rapid changes (e.g., hold) */
+        body.no-font-transition {
+            transition: none !important;
+        }
+
+        /* Headings */
+        h1, h2 { font-family: 'Roboto Mono', monospace; text-align: center; margin-bottom: 1.5em; }
+        h1 { font-size: 2.4em; color: #ffffff; font-weight: 700; padding-bottom: 12px; margin-top: 1.5em; margin-bottom: 1.5em; border-bottom: 2px solid #ffffff; animation: fadeIn 0.8s ease-out both; animation-delay: 0.1s; letter-spacing: -0.5px; }
+        h2 { font-size: 1.6em; color: #cccccc; font-weight: 500; margin-top: 30px; margin-bottom: 1.5em; border-bottom: 1px solid #555555; padding-bottom: 5px; animation: fadeIn 0.8s ease-out both; animation-delay: 0.3s; }
+        h3 { font-size: 1.2em; color: #bdbdbd; font-weight: 500; margin-top: 1.8em; margin-bottom: 0.8em; padding-bottom: 3px; border-bottom: 1px dotted #444; }
+        h4 { font-size: 1.1em; color: #cacaca; margin-bottom: 0.5em; padding-bottom: 2px; border-bottom: 1px dotted #555; margin-top: 1.5em;} /* Added h4 style */
+
+
+        /* Main Content Area */
+        main { max-width: 800px; margin: 40px auto; background-color: rgba(30, 30, 30, 0.85); padding: 35px 45px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.1); animation: fadeIn 0.8s ease-out both; animation-delay: 0.2s; }
+        /* Paragraph and List styling */
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; list-style: disc; margin-bottom: 1em; }
+        ol { list-style: decimal; }
+        li { margin-bottom: 8px; font-size: inherit; }
+        strong { font-weight: 500; color: #ffffff; }
+        em { font-style: italic; color: #ababab; } /* Style for italic/emphasis */
+        blockquote { margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(40, 40, 40, 0.7); border-left: 4px solid #666; color: #d0d0d0; }
+        blockquote p { margin-bottom: 0.5em; }
+        blockquote h4 { font-size: 1.1em; color: #cacaca; margin-bottom: 0.5em; padding-bottom: 2px; border-bottom: 1px dotted #555; } /* Style for headings inside blockquotes */
+
+
+        /* Formula Container Styling (with horizontal scroll) */
+        .formula-container {
+            margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(45, 45, 45, 0.9);
+            border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-x: auto; overflow-y: hidden; /* Horizontal scroll, no vertical */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            cursor: pointer; color: #e0e0e0; border-left: 4px solid transparent;
+            font-family: 'Roboto Mono', monospace; position: relative; white-space: nowrap;
+        }
+        .formula-container:hover { background-color: rgba(60, 60, 60, 0.95); border-left-color: #a6e3a1; border-color: rgba(166, 227, 161, 0.5); }
+        .formula-container.copied { background-color: rgba(166, 227, 161, 0.2); border-color: #a6e3a1; border-left-color: #a6e3a1; }
+        /* Optional Scrollbar Style */
+        .formula-container::-webkit-scrollbar { height: 8px; }
+        .formula-container::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.5); border-radius: 4px; }
+        .formula-container::-webkit-scrollbar-thumb { background-color: #888; border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        .formula-container::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
+        /* MathJax display style */
+        .formula-container mjx-container[display="true"] { margin: 0.5em 0 !important; text-align: left !important; display: inline-block; vertical-align: middle; }
+
+        /* Footer Styling */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both; animation-delay: 0.7s; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+        /* Font Control Icons CSS */
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: #a6e3a1; }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Liouville's Theorem and the Fundamental Theorem of Algebra</h1> <!-- UPDATED H1 -->
+    </header>
+
+    <main>
+        <!-- ==== SECTION: Liouville & FTA (53) ==== -->
+        <h2>Section 53: Liouville's Theorem and the Fundamental Theorem of Algebra</h2>
+
+        <p>This section uses Cauchy's inequality to establish two important theorems.</p>
+
+        <h3>1. Liouville's Theorem</h3>
+        <blockquote>
+            <h4>Statement</h4>
+            <p>If a function $f$ is <strong>entire</strong> (analytic everywhere in the complex plane) and <strong>bounded</strong> (i.e., there exists a constant $M$ such that $|f(z)| \le M$ for all $z$), then $f(z)$ must be <strong>constant</strong> throughout the plane.</p>
+        </blockquote>
+        <h4>Proof Idea</h4>
+        <ul>
+            <li>Since $f$ is entire, Cauchy's inequality $|f'(z_0)| \le M_R / R$ holds for any point $z_0$ and any radius $R$ (where $M_R$ is the max of $|f(z)|$ on $|z - z_0| = R$).</li>
+            <li>Since $f$ is bounded by $M$, we know $M_R \le M$. Thus, $|f'(z_0)| \le M / R$.</li>
+            <li>This inequality holds for <em>any</em> $R$. As we let $R$ become arbitrarily large ($R \to \infty$), the term $M / R$ approaches 0.</li>
+            <li>Therefore, $|f'(z_0)|$ must be 0, which means $f'(z_0) = 0$.</li>
+            <li>Since $z_0$ was arbitrary, $f'(z) = 0$ everywhere.</li>
+            <li>A function whose derivative is zero everywhere must be constant.</li>
+        </ul>
+
+        <h3>2. Fundamental Theorem of Algebra</h3>
+        <blockquote>
+            <h4>Statement</h4>
+            <p>Any polynomial $P(z) = a_0 + a_1z + \dots + a_n z^n$, where $n \ge 1$ and $a_n \ne 0$, has at least one zero. That is, there exists at least one point $z_0$ such that $P(z_0) = 0$.</p>
+        </blockquote>
+        <h4>Proof Idea (by Contradiction)</h4>
+        <ul>
+            <li>Assume $P(z)$ is <em>never</em> zero.</li>
+            <li>Then the function $f(z) = 1 / P(z)$ is defined for all $z$. Since $P(z)$ is a polynomial, it's entire, and since it's never zero, $f(z)$ is also <strong>entire</strong>.</li>
+            <li>The goal is to show $f(z)$ is also <strong>bounded</strong>.</li>
+            <li>Rewrite $P(z)$ for large $|z|$: $P(z) = z^n (a_n + a_{n-1}/z + \dots + a_0/z^n) = z^n (a_n + w)$, where $w = a_{n-1}/z + \dots + a_0/z^n$.</li>
+            <li>For sufficiently large $|z|$ (say $|z| > R$), we can make $|w|$ arbitrarily small, specifically $|w| < |a_n|/2$.</li>
+            <li>Using the triangle inequality, $|a_n + w| \ge ||a_n| - |w|| > |a_n| - |a_n|/2 = |a_n|/2$ when $|z| > R$.</li>
+            <li>So, $|P(z)| = |a_n + w| |z|^n > (|a_n|/2) |z|^n$ when $|z| > R$.</li>
+            <li>This means $|f(z)| = 1 / |P(z)| < 2 / (|a_n| |z|^n)$. Since $|z| > R$ implies $|z|^n > R^n$, we have $|f(z)| < 2 / (|a_n| R^n)$ when $|z| > R$. So, $f(z)$ is bounded for large $|z|$.</li>
+            <li>Since $f(z)$ is continuous (because it's entire) on the closed disk $|z| \le R$, it must be bounded on that disk too (by the Extreme Value Theorem for continuous functions on compact sets).</li>
+            <li>Therefore, $f(z)$ is bounded everywhere in the complex plane.</li>
+            <li>By Liouville's Theorem, since $f(z)$ is entire and bounded, it must be constant.</li>
+            <li>If $f(z) = 1 / P(z)$ is constant, then $P(z)$ must also be constant.</li>
+            <li>But $P(z)$ is a polynomial of degree $n \ge 1$, so it is <em>not</em> constant. This is a <strong>contradiction</strong>.</li>
+            <li>The initial assumption (that $P(z)$ is never zero) must be false. Thus, $P(z)$ must have at least one zero.</li>
+        </ul>
+        <h4>Factorization</h4>
+        <p>The theorem guarantees at least one zero, $z_1$. This allows polynomial division, showing $P(z) = (z - z_1) Q_1(z)$, where $Q_1$ is a polynomial of degree $n-1$. Applying the theorem repeatedly leads to the factorization:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{P(z) = c (z - z_1) (z - z_2) \\dots (z - z_n)}')"
+             data-latex="P(z) = c (z - z_1) (z - z_2) \dots (z - z_n)"
+             title="Click to copy LaTeX">
+             $$ P(z) = c (z - z_1) (z - z_2) \dots (z - z_n) $$
+        </div>
+        <p>where $c = a_n$.</p>
+
+        <!-- End of Section 53 content -->
+    </main>
+
+    <footer>
+        <!-- Optional: Add footer text if needed -->
+    </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div> <!-- Initial size display -->
+
+    <script>
+        // --- Formula Copy Function ---
+        function copyFormulaLatex(element, latexStringWithColor) {
+            if (!latexStringWithColor) {
+                console.error('No LaTeX data found passed to copy function.');
+                return;
+            }
+            // Extract the original LaTeX from data-latex attribute for copying
+            const originalLatex = element.getAttribute('data-latex');
+             if (!originalLatex) {
+                 console.error('No original LaTeX data found in data-latex attribute.');
+                 // Fallback to using the colored string if needed, but remove the color command
+                 latexStringWithColor = latexStringWithColor.replace('\\color{white}{', '').slice(0, -1);
+                 navigator.clipboard.writeText(latexStringWithColor).then(() => { /*...*/ }).catch(err => { /*...*/ });
+                 return; // Or handle fallback differently
+             }
+
+            navigator.clipboard.writeText(originalLatex).then(() => {
+                element.classList.add('copied');
+                const originalTitle = element.title;
+                element.title = 'Copied: ' + originalLatex; // Show what was copied
+                setTimeout(() => {
+                    element.classList.remove('copied');
+                    element.title = originalTitle; // Restore original title
+                 }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy LaTeX: ', err);
+                // Optionally provide user feedback about the failure
+                const originalTitle = element.title;
+                element.title = 'Copy failed!';
+                 setTimeout(() => { element.title = originalTitle; }, 1500);
+            });
+        }
+
+        // --- Font Size Control & Hold Functionality ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body; // Target body for transition class
+
+            // Configuration
+            let currentSize = 10; // Initial size set to 10px
+            const minSize = 10;
+            const maxSize = 28; // Adjust max size if needed
+            const step = 1;
+            let displayTimeout = null;
+            let holdTimeout = null;
+            let holdInterval = null;
+            const initialHoldDelay = 400; // ms before repeat starts
+            const repeatInterval = 100;  // ms between repeats while holding
+            const mathJaxDebounceDelay = 350; // ms to wait after last change before re-typesetting
+
+            // --- Debounce Function ---
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => { clearTimeout(timeout); func(...args); };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // --- Debounced MathJax Typesetting ---
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax");
+                    // Target the main content area for re-typesetting if possible
+                    const mainContent = document.querySelector('main');
+                    const targetElement = mainContent || bodyEl; // Fallback to body
+                    MathJax.typesetPromise([targetElement]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            // --- Update Font Size and Display ---
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px';
+                    display.classList.add('visible');
+
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => {
+                        display.classList.remove('visible');
+                        displayTimeout = null;
+                    }, 1500);
+
+                    // Don't queue MathJax immediately, wait for hold to potentially finish
+                    // queueMathJaxTypeset(); // Removed from here
+                    return true; // Indicate size changed
+                }
+                return false; // Indicate size hit limit
+            }
+
+            // --- Stop Holding Action ---
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition'); // Re-enable transition
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                // When holding stops, trigger MathJax update
+                queueMathJaxTypeset();
+            }
+
+            // --- Start Holding Action ---
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); // OPTIONAL: Disable transition during hold
+                updateFontSize(currentSize + direction * step); // Initial action
+                stopHolding(); // Clear previous timers before starting new ones
+
+                holdTimeout = setTimeout(() => {
+                    // After initial delay, start repeating
+                    holdInterval = setInterval(() => {
+                        if (!updateFontSize(currentSize + direction * step)) {
+                            stopHolding(); // Stop if size limit is reached
+                        }
+                    }, repeatInterval);
+                }, initialHoldDelay);
+            }
+
+            // --- Event Listeners ---
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                // Use 'pointerup' and 'pointerleave' for better touch/mouse handling
+                window.addEventListener('pointerup', stopHolding);
+                minusBtn.addEventListener('pointerleave', stopHolding);
+                plusBtn.addEventListener('pointerleave', stopHolding);
+
+                // Set initial state
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+                 // Initial MathJax typeset on load (after ready)
+                 if (window.MathJax) {
+                     MathJax.startup.promise.then(() => {
+                         console.log("Queueing initial MathJax typeset");
+                         queueMathJaxTypeset(); // Use the debounced version even initially
+                     });
+                 }
+            } else {
+                console.error("Font control elements not found!");
+            }
+
+            // --- Horizontal Scroll Redirect for Formula Containers ---
+             const formulaContainers = document.querySelectorAll('.formula-container');
+             formulaContainers.forEach(container => {
+                 container.addEventListener('wheel', function(event) {
+                     // Only act if the container is actually scrollable horizontally
+                     const isScrollableHorizontally = this.scrollWidth > this.clientWidth;
+                     // Only act if there's vertical scroll intent (deltaY) and not horizontal (deltaX)
+                     const isVerticalScroll = event.deltaY !== 0 && event.deltaX === 0;
+
+                     if (isScrollableHorizontally && isVerticalScroll) {
+                         event.preventDefault(); // Prevent the default vertical page scroll
+                         // Adjust scrollLeft based on deltaY. Might need scaling depending on desired sensitivity.
+                         this.scrollLeft += event.deltaY;
+                     }
+                     // If isScrollableHorizontally is false, or if it's already horizontal scroll (event.deltaX != 0),
+                     // the default behavior (vertical page scroll or horizontal container scroll) will occur.
+                 }, { passive: false }); // passive: false is needed to call preventDefault()
+             });
+             console.log("Horizontal scroll override applied to formula containers.");
+
+        });
+    </script>
+
+</body>
+</html>

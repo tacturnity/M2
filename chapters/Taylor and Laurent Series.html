@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;"> <!-- Default font size set to 10px -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taylor and Laurent Series</title> <!-- UPDATED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: {
+            ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); }
+          }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes for Animations (FadeIn) */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Fonts & Base Styling */
+        body {
+            font-family: 'Roboto Mono', monospace;
+            color: #e0e0e0;
+            line-height: 1.7;
+            padding: 25px;
+            background-color: #1a1a1a;
+            min-height: 100vh;
+            font-size: var(--base-font-size); /* Controlled by JS */
+            transition: font-size 0.2s ease-in-out; /* Default smooth transition */
+            padding-bottom: 80px; /* Space for controls */
+            overflow-x: hidden;
+        }
+        /* Class to disable transition during rapid changes (e.g., hold) */
+        body.no-font-transition {
+            transition: none !important;
+        }
+
+        /* Headings */
+        h1, h2 { font-family: 'Roboto Mono', monospace; text-align: center; margin-bottom: 1.5em; }
+        h1 { font-size: 2.4em; color: #ffffff; font-weight: 700; padding-bottom: 12px; margin-top: 1.5em; margin-bottom: 1.5em; border-bottom: 2px solid #ffffff; animation: fadeIn 0.8s ease-out both; animation-delay: 0.1s; letter-spacing: -0.5px; }
+        h2 { font-size: 1.6em; color: #cccccc; font-weight: 500; margin-top: 30px; margin-bottom: 1.5em; border-bottom: 1px solid #555555; padding-bottom: 5px; animation: fadeIn 0.8s ease-out both; animation-delay: 0.3s; }
+        h3 { font-size: 1.2em; color: #bdbdbd; font-weight: 500; margin-top: 1.8em; margin-bottom: 0.8em; padding-bottom: 3px; border-bottom: 1px dotted #444; }
+        h4 { font-size: 1.1em; color: #cacaca; margin-bottom: 0.5em; padding-bottom: 2px; border-bottom: 1px dotted #555; margin-top: 1.5em;} /* Added h4 style */
+
+
+        /* Main Content Area */
+        main { max-width: 800px; margin: 40px auto; background-color: rgba(30, 30, 30, 0.85); padding: 35px 45px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.1); animation: fadeIn 0.8s ease-out both; animation-delay: 0.2s; }
+        /* Paragraph and List styling */
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; list-style: disc; margin-bottom: 1em; }
+        ol { list-style: decimal; }
+        li { margin-bottom: 8px; font-size: inherit; }
+        strong { font-weight: 500; color: #ffffff; }
+        em { font-style: italic; color: #ababab; } /* Style for italic/emphasis */
+        blockquote { margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(40, 40, 40, 0.7); border-left: 4px solid #666; color: #d0d0d0; }
+        blockquote p { margin-bottom: 0.5em; }
+        blockquote h4 { font-size: 1.1em; color: #cacaca; margin-bottom: 0.5em; padding-bottom: 2px; border-bottom: 1px dotted #555; } /* Style for headings inside blockquotes */
+
+
+        /* Formula Container Styling (with horizontal scroll) */
+        .formula-container {
+            margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(45, 45, 45, 0.9);
+            border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-x: auto; overflow-y: hidden; /* Horizontal scroll, no vertical */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            cursor: pointer; color: #e0e0e0; border-left: 4px solid transparent;
+            font-family: 'Roboto Mono', monospace; position: relative; white-space: nowrap;
+        }
+        .formula-container:hover { background-color: rgba(60, 60, 60, 0.95); border-left-color: #a6e3a1; border-color: rgba(166, 227, 161, 0.5); }
+        .formula-container.copied { background-color: rgba(166, 227, 161, 0.2); border-color: #a6e3a1; border-left-color: #a6e3a1; }
+        /* Optional Scrollbar Style */
+        .formula-container::-webkit-scrollbar { height: 8px; }
+        .formula-container::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.5); border-radius: 4px; }
+        .formula-container::-webkit-scrollbar-thumb { background-color: #888; border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        .formula-container::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
+        /* MathJax display style */
+        .formula-container mjx-container[display="true"] { margin: 0.5em 0 !important; text-align: left !important; display: inline-block; vertical-align: middle; }
+
+        /* Footer Styling */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both; animation-delay: 0.7s; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+        /* Font Control Icons CSS */
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: #a6e3a1; }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Taylor and Laurent Series</h1> <!-- UPDATED H1 -->
+    </header>
+
+    <main>
+        <!-- ==== SECTION: Taylor & Laurent Series (57, 59, 60, 62) ==== -->
+        <h2>Sections 57, 59, 60, 62</h2>
+
+        <p>These sections deal with representing analytic functions as power series.</p>
+
+        <h3>1. Taylor Series (Section 57)</h3>
+
+        <h4>Taylor's Theorem Statement</h4>
+        <blockquote>
+            <p>Suppose $f(z)$ is analytic throughout an open disk $|z - z_0| < R_0$. Then, for every $z$ in that disk, $f(z)$ has the power series representation:</p>
+            <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{f(z) = \\sum_{n=0}^\\infty a_n (z - z_0)^n}')"
+                 data-latex="f(z) = \sum_{n=0}^\infty a_n (z - z_0)^n"
+                 title="Click to copy LaTeX">
+                 $$ f(z) = \sum_{n=0}^\infty a_n (z - z_0)^n $$
+            </div>
+            <p>where the coefficients $a_n$ are given by:</p>
+            <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{a_n = \\frac{f^{(n)}(z_0)}{n!}}')"
+                 data-latex="a_n = \frac{f^{(n)}(z_0)}{n!} \quad (n = 0, 1, 2, \dots)"
+                 title="Click to copy LaTeX">
+                 $$ a_n = \frac{f^{(n)}(z_0)}{n!} \quad (n = 0, 1, 2, \dots) $$
+            </div>
+            <p>(Here $f^{(0)}$ means $f$ and $0! = 1$).</p>
+        </blockquote>
+
+        <h4>Interpretation</h4>
+        <p>If a function is analytic in a disk, it can be represented by a power series centered at $z_0$ that converges within that disk. The coefficients depend on the derivatives of $f$ at $z_0$.</p>
+
+        <h4>Maclaurin Series</h4>
+        <p>This is the special case where $z_0 = 0$. The series becomes:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{f(z) = \\sum_{n=0}^\\infty \\frac{f^{(n)}(0)}{n!} z^n}')"
+             data-latex="f(z) = \sum_{n=0}^\infty \frac{f^{(n)}(0)}{n!} z^n \quad (\text{valid for } |z| < R_0)"
+             title="Click to copy LaTeX">
+             $$ f(z) = \sum_{n=0}^\infty \frac{f^{(n)}(0)}{n!} z^n \quad (\text{valid for } |z| < R_0) $$
+        </div>
+
+        <h4>Radius of Convergence</h4>
+        <p>The theorem guarantees convergence within the specified disk $|z - z_0| < R_0$. If $f$ is analytic within a larger disk, the series will converge there too. The largest circle centered at $z_0$ within which the series converges corresponds to the distance from $z_0$ to the nearest point where $f$ is <em>not</em> analytic. If $f$ is entire, the series converges for all $z$ ($R_0 = \infty$).</p>
+
+        <h3>2. Examples of Taylor (Maclaurin) Series (Section 59)</h3>
+
+        <p>Calculating $f^{(n)}(z_0)$ can be tedious. Often, we derive series by manipulating known ones.</p>
+
+        <h4>Example 1: $f(z) = e^z$</h4>
+        <ul>
+            <li>$f(z)$ is entire. $f^{(n)}(z) = e^z$ for all $n$. $f^{(n)}(0) = e^0 = 1$.</li>
+            <li>Maclaurin series ($z_0=0$):</li>
+        </ul>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{e^z = \\sum_{n=0}^\\infty \\frac{1}{n!} z^n = 1 + z + \\frac{z^2}{2!} + \\frac{z^3}{3!} + \\dots}')"
+             data-latex="e^z = \sum_{n=0}^\infty \frac{1}{n!} z^n = 1 + z + \frac{z^2}{2!} + \frac{z^3}{3!} + \dots \quad (|z| < \infty)"
+             title="Click to copy LaTeX">
+             $$ e^z = \sum_{n=0}^\infty \frac{1}{n!} z^n = 1 + z + \frac{z^2}{2!} + \frac{z^3}{3!} + \dots \quad (|z| < \infty) $$
+        </div>
+        <ul>
+            <li><strong>Manipulation:</strong> To find the series for $z^2 e^{3z}$:
+                <ul>
+                    <li>Replace $z$ with $3z$ in the $e^z$ series:</li>
+                     <div class="formula-container"
+                         onclick="copyFormulaLatex(this, '\\color{white}{e^{3z} = \\sum_{n=0}^\\infty \\frac{1}{n!} (3z)^n = \\sum_{n=0}^\\infty \\frac{3^n}{n!} z^n}')"
+                         data-latex="e^{3z} = \sum_{n=0}^\infty \frac{1}{n!} (3z)^n = \sum_{n=0}^\infty \frac{3^n}{n!} z^n"
+                         title="Click to copy LaTeX">
+                         $$ e^{3z} = \sum_{n=0}^\infty \frac{1}{n!} (3z)^n = \sum_{n=0}^\infty \frac{3^n}{n!} z^n $$
+                    </div>
+                   <li>Multiply by $z^2$:</li>
+                     <div class="formula-container"
+                         onclick="copyFormulaLatex(this, '\\color{white}{z^2 e^{3z} = \\sum_{n=0}^\\infty \\frac{3^n}{n!} z^{n+2}}')"
+                         data-latex="z^2 e^{3z} = \sum_{n=0}^\infty \frac{3^n}{n!} z^{n+2} \quad (|z| < \infty)"
+                         title="Click to copy LaTeX">
+                         $$ z^2 e^{3z} = \sum_{n=0}^\infty \frac{3^n}{n!} z^{n+2} \quad (|z| < \infty) $$
+                    </div>
+                </ul>
+            </li>
+        </ul>
+
+        <h4>Example 2: $f(z) = \sin z$</h4>
+         <ul>
+             <li>$f(z)$ is entire. Use $\sin z = (e^{iz} - e^{-iz}) / 2i$.</li>
+             <li>Substitute the series for $e^{iz}$ and $e^{-iz}$:
+                 $e^{iz} = \sum (iz)^n / n! = \sum i^n z^n / n!$ <br/>
+                 $e^{-iz} = \sum (-iz)^n / n! = \sum (-1)^n i^n z^n / n!$
+             </li>
+             <li>$e^{iz} - e^{-iz} = \sum [1 - (-1)^n] i^n z^n / n!$</li>
+             <li>The $[1 - (-1)^n]$ term is 0 for even $n$ and 2 for odd $n$. Let $n = 2k + 1$.</li>
+             <li>Sum becomes $\sum_{k=0}^\infty 2 \cdot i^{2k+1} z^{2k+1} / (2k+1)!$. Since $i^{2k+1} = (i^2)^k \cdot i = (-1)^k i$.</li>
+             <li>$e^{iz} - e^{-iz} = \sum_{k=0}^\infty 2 \cdot (-1)^k \cdot i \cdot z^{2k+1} / (2k+1)!$.</li>
+             <li>Divide by $2i$:</li>
+         </ul>
+         <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\sin z = \\sum_{k=0}^\\infty \\frac{(-1)^k}{(2k+1)!} z^{2k+1} = z - \\frac{z^3}{3!} + \\frac{z^5}{5!} - \\dots}')"
+             data-latex="\sin z = \sum_{k=0}^\infty \frac{(-1)^k}{(2k+1)!} z^{2k+1} = z - \frac{z^3}{3!} + \frac{z^5}{5!} - \dots \quad (|z| < \infty)"
+             title="Click to copy LaTeX">
+             $$ \sin z = \sum_{k=0}^\infty \frac{(-1)^k}{(2k+1)!} z^{2k+1} = z - \frac{z^3}{3!} + \frac{z^5}{5!} - \dots \quad (|z| < \infty) $$
+         </div>
+
+        <h4>Example 4: Geometric Series $f(z) = 1 / (1 - z)$</h4>
+        <ul>
+            <li>$f^{(n)}(z) = n! / (1 - z)^{n+1}$. So $f^{(n)}(0) = n!$.</li>
+            <li>Maclaurin series:</li>
+        </ul>
+         <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\frac{1}{1 - z} = \\sum_{n=0}^\\infty \\frac{n!}{n!} z^n = \\sum_{n=0}^\\infty z^n = 1 + z + z^2 + \\dots}')"
+             data-latex="\frac{1}{1 - z} = \sum_{n=0}^\infty \frac{n!}{n!} z^n = \sum_{n=0}^\infty z^n = 1 + z + z^2 + \dots \quad (|z| < 1)"
+             title="Click to copy LaTeX">
+             $$ \frac{1}{1 - z} = \sum_{n=0}^\infty \frac{n!}{n!} z^n = \sum_{n=0}^\infty z^n = 1 + z + z^2 + \dots \quad (|z| < 1) $$
+        </div>
+         <ul>
+            <li><strong>Manipulation:</strong> Series for $1 / (1 + z)$: Replace $z$ with $-z$:</li>
+         </ul>
+         <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\frac{1}{1 + z} = \\sum_{n=0}^\\infty (-z)^n = \\sum_{n=0}^\\infty (-1)^n z^n}')"
+             data-latex="\frac{1}{1 + z} = \sum_{n=0}^\infty (-z)^n = \sum_{n=0}^\infty (-1)^n z^n \quad (|z| < 1)"
+             title="Click to copy LaTeX">
+             $$ \frac{1}{1 + z} = \sum_{n=0}^\infty (-z)^n = \sum_{n=0}^\infty (-1)^n z^n \quad (|z| < 1) $$
+        </div>
+
+        <h3>3. Laurent Series (Section 60)</h3>
+
+        <h4>Use Case</h4>
+        <p>Used to represent a function $f(z)$ which is analytic in an <em>annular</em> domain $R_1 < |z - z_0| < R_2$, but might <em>not</em> be analytic at $z_0$ itself.</p>
+
+        <h4>Laurent's Theorem Statement</h4>
+        <blockquote>
+            <p>If $f(z)$ is analytic throughout the annulus $R_1 < |z - z_0| < R_2$, and $C$ is any positively oriented simple closed contour around $z_0$ within this annulus, then for any $z$ in the annulus:</p>
+            <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{f(z) = \\sum_{n=0}^\\infty a_n (z - z_0)^n + \\sum_{n=1}^\\infty \\frac{b_n}{(z - z_0)^n}}')"
+                 data-latex="f(z) = \sum_{n=0}^\infty a_n (z - z_0)^n + \sum_{n=1}^\infty \frac{b_n}{(z - z_0)^n}"
+                 title="Click to copy LaTeX">
+                 $$ f(z) = \sum_{n=0}^\infty a_n (z - z_0)^n + \sum_{n=1}^\infty \frac{b_n}{(z - z_0)^n} $$
+            </div>
+            <p>where:</p>
+            <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{a_n = \\frac{1}{2\\pi i} \\int_C \\frac{f(s)}{(s - z_0)^{n+1}} ds}')"
+                 data-latex="a_n = \frac{1}{2\pi i} \int_C \frac{f(s)}{(s - z_0)^{n+1}} ds \quad (n = 0, 1, \dots)"
+                 title="Click to copy LaTeX">
+                 $$ a_n = \frac{1}{2\pi i} \int_C \frac{f(s)}{(s - z_0)^{n+1}} ds \quad (n = 0, 1, \dots) $$
+            </div>
+            <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{b_n = \\frac{1}{2\\pi i} \\int_C \\frac{f(s)}{(s - z_0)^{-n+1}} ds = \\frac{1}{2\\pi i} \\int_C f(s) (s - z_0)^{n-1} ds}')"
+                 data-latex="b_n = \frac{1}{2\pi i} \int_C \frac{f(s)}{(s - z_0)^{-n+1}} ds = \frac{1}{2\pi i} \int_C f(s) (s - z_0)^{n-1} ds \quad (n = 1, 2, \dots)"
+                 title="Click to copy LaTeX">
+                 $$ b_n = \frac{1}{2\pi i} \int_C \frac{f(s)}{(s - z_0)^{-n+1}} ds = \frac{1}{2\pi i} \int_C f(s) (s - z_0)^{n-1} ds \quad (n = 1, 2, \dots) $$
+            </div>
+        </blockquote>
+
+        <h4>Interpretation</h4>
+        <p>The series has two parts:</p>
+        <ul>
+            <li>The <strong>analytic part</strong> $\sum a_n (z - z_0)^n$: non-negative powers of $(z-z_0)$, like a Taylor series.</li>
+            <li>The <strong>principal part</strong> $\sum b_n / (z - z_0)^n$: negative powers of $(z-z_0)$. This part captures the singular behavior near $z_0$.</li>
+        </ul>
+
+        <h4>Combined Form</h4>
+        <p>Often written compactly as:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{f(z) = \\sum_{n=-\\infty}^\\infty c_n (z - z_0)^n}')"
+             data-latex="f(z) = \sum_{n=-\infty}^\infty c_n (z - z_0)^n \quad (R_1 < |z - z_0| < R_2)"
+             title="Click to copy LaTeX">
+             $$ f(z) = \sum_{n=-\infty}^\infty c_n (z - z_0)^n \quad (R_1 < |z - z_0| < R_2) $$
+        </div>
+        <p>where</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{c_n = \\frac{1}{2\\pi i} \\int_C \\frac{f(s)}{(s - z_0)^{n+1}} ds}')"
+             data-latex="c_n = \frac{1}{2\pi i} \int_C \frac{f(s)}{(s - z_0)^{n+1}} ds \quad (\text{for all integers } n)"
+             title="Click to copy LaTeX">
+             $$ c_n = \frac{1}{2\pi i} \int_C \frac{f(s)}{(s - z_0)^{n+1}} ds \quad (\text{for all integers } n) $$
+        </div>
+        <p>(Note that $c_n = a_n$ for $n \ge 0$ and $c_n = b_{-n}$ for $n < 0$).</p>
+
+        <h4>Relation to Taylor Series</h4>
+        <p>If $f(z)$ is actually analytic <em>at</em> $z_0$ (and thus throughout the disk $|z - z_0| < R_2$), then the integrand $f(s) (s - z_0)^{n-1}$ for the $b_n$ coefficients is analytic inside and on $C$. By Cauchy-Goursat, all $b_n$ coefficients become zero. The Laurent series reduces to the Taylor series.</p>
+
+        <h3>4. Examples of Laurent Series (Section 62)</h3>
+
+        <p>Finding coefficients $a_n, b_n$ using the integrals is rarely done in practice. Instead, manipulate known (usually geometric) series. Uniqueness (proven later) guarantees the result is <em>the</em> Laurent series.</p>
+
+        <h4>Example 1: $f(z) = e^{1/z}$ around $z_0 = 0$</h4>
+        <ul>
+            <li>Replace $z$ with $1/z$ in the Maclaurin series for $e^z$:</li>
+        </ul>
+         <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{e^{1/z} = \\sum_{n=0}^\\infty \\frac{1}{n!} \\left(\\frac{1}{z}\\right)^n = \\sum_{n=0}^\\infty \\frac{1}{n! z^n}}')"
+             data-latex="e^{1/z} = \sum_{n=0}^\infty \frac{1}{n!} \left(\frac{1}{z}\right)^n = \sum_{n=0}^\infty \frac{1}{n! z^n}"
+             title="Click to copy LaTeX">
+             $$ e^{1/z} = \sum_{n=0}^\infty \frac{1}{n!} \left(\frac{1}{z}\right)^n = \sum_{n=0}^\infty \frac{1}{n! z^n} $$
+        </div>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{e^{1/z} = 1 + \\frac{1}{1! z} + \\frac{1}{2! z^2} + \\frac{1}{3! z^3} + \\dots}')"
+             data-latex="e^{1/z} = 1 + \frac{1}{1! z} + \frac{1}{2! z^2} + \frac{1}{3! z^3} + \dots"
+             title="Click to copy LaTeX">
+             $$ e^{1/z} = 1 + \frac{1}{1! z} + \frac{1}{2! z^2} + \frac{1}{3! z^3} + \dots $$
+        </div>
+        <ul>
+            <li>This is a Laurent series valid for $0 < |z| < \infty$. Here $a_n = 0$ for $n > 0$, $a_0 = 1$, and $b_n = 1/n!$ for $n \ge 1$. The coefficient of $1/z$ (which is $b_1$) is 1.</li>
+        </ul>
+
+        <h4>Example 2: Function $f(z) = -1 / [(z-1)(z-2)]$</h4>
+        <ul>
+            <li>Use partial fractions: $f(z) = \frac{1}{z-1} - \frac{1}{z-2}$</li>
+            <li>Singularities at $z=1, z=2$. Analytic in annuli around $z_0=0$:
+                <ul>
+                    <li>$D_1: |z| < 1$</li>
+                    <li>$D_2: 1 < |z| < 2$</li>
+                    <li>$D_3: 2 < |z| < \infty$</li>
+                </ul>
+            </li>
+            <li>We need series expansions in powers of $z$ ($z_0 = 0$). Use the geometric series $1/(1-w) = \sum w^n$ for $|w|<1$.</li>
+            <li><strong>Domain D1: $|z| < 1$</strong> (Taylor/Maclaurin series)
+                <ul>
+                    <li>Requires $|z| < 1$ and $|z/2| < 1$.</li>
+                    <li>$\frac{1}{z-1} = \frac{-1}{1 - z} = - \sum_{n=0}^\infty z^n$</li>
+                    <li>$\frac{1}{z-2} = \frac{-1}{2(1 - z/2)} = -\frac{1}{2} \sum_{n=0}^\infty \left(\frac{z}{2}\right)^n = - \sum_{n=0}^\infty \frac{z^n}{2^{n+1}}$</li>
+                    <li>$f(z) = \left( - \sum_{n=0}^\infty z^n \right) - \left( - \sum_{n=0}^\infty \frac{z^n}{2^{n+1}} \right) = \sum_{n=0}^\infty \left( \frac{1}{2^{n+1}} - 1 \right) z^n$</li>
+                </ul>
+            </li>
+             <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{f(z) = \\sum_{n=0}^\\infty \\left( \\frac{1}{2^{n+1}} - 1 \\right) z^n}')"
+                 data-latex="f(z) = \sum_{n=0}^\infty \left( \frac{1}{2^{n+1}} - 1 \right) z^n \quad (|z| < 1)"
+                 title="Click to copy LaTeX">
+                 $$ f(z) = \sum_{n=0}^\infty \left( \frac{1}{2^{n+1}} - 1 \right) z^n \quad (|z| < 1) $$
+            </div>
+            <li><strong>Domain D2: $1 < |z| < 2$</strong> (Laurent series)
+                <ul>
+                    <li>Requires $|1/z| < 1$ and $|z/2| < 1$.</li>
+                    <li>Rewrite terms:
+                        <ul>
+                            <li>$\frac{1}{z-1} = \frac{1}{z(1 - 1/z)} = \frac{1}{z} \sum_{n=0}^\infty \left(\frac{1}{z}\right)^n = \sum_{n=0}^\infty \frac{1}{z^{n+1}}$</li>
+                            <li>$\frac{1}{z-2} = \frac{-1}{2(1 - z/2)} = -\frac{1}{2} \sum_{n=0}^\infty \left(\frac{z}{2}\right)^n = - \sum_{n=0}^\infty \frac{z^n}{2^{n+1}}$</li>
+                        </ul>
+                    </li>
+                     <li>$f(z) = \left( \sum_{n=0}^\infty \frac{1}{z^{n+1}} \right) - \left( - \sum_{n=0}^\infty \frac{z^n}{2^{n+1}} \right) = \sum_{n=0}^\infty \frac{z^n}{2^{n+1}} + \sum_{n=0}^\infty \frac{1}{z^{n+1}}$</li>
+                     <li>Standard Laurent form: Re-index the second sum with $k=n+1$ (so $k$ goes from 1 to $\infty$):</li>
+                 </ul>
+            </li>
+             <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{f(z) = \\sum_{n=0}^\\infty \\frac{z^n}{2^{n+1}} + \\sum_{k=1}^\\infty \\frac{1}{z^k}}')"
+                 data-latex="f(z) = \sum_{n=0}^\infty \frac{z^n}{2^{n+1}} + \sum_{k=1}^\infty \frac{1}{z^k} \quad (1 < |z| < 2)"
+                 title="Click to copy LaTeX">
+                 $$ f(z) = \sum_{n=0}^\infty \frac{z^n}{2^{n+1}} + \sum_{k=1}^\infty \frac{1}{z^k} \quad (1 < |z| < 2) $$
+            </div>
+             <li><strong>Domain D3: $2 < |z| < \infty$</strong> (Laurent series)
+                 <ul>
+                    <li>Requires $|1/z| < 1$ and $|2/z| < 1$.</li>
+                    <li>Rewrite terms:
+                        <ul>
+                           <li>$\frac{1}{z-1} = \frac{1}{z(1 - 1/z)} = \frac{1}{z} \sum_{n=0}^\infty \left(\frac{1}{z}\right)^n = \sum_{n=0}^\infty \frac{1}{z^{n+1}}$</li>
+                           <li>$\frac{1}{z-2} = \frac{1}{z(1 - 2/z)} = \frac{1}{z} \sum_{n=0}^\infty \left(\frac{2}{z}\right)^n = \sum_{n=0}^\infty \frac{2^n}{z^{n+1}}$</li>
+                        </ul>
+                    </li>
+                    <li>$f(z) = \left( \sum_{n=0}^\infty \frac{1}{z^{n+1}} \right) - \left( \sum_{n=0}^\infty \frac{2^n}{z^{n+1}} \right) = \sum_{n=0}^\infty \frac{1 - 2^n}{z^{n+1}}$</li>
+                    <li>Standard Laurent form: Re-index with $k=n+1$:</li>
+                 </ul>
+             </li>
+             <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{f(z) = \\sum_{k=1}^\\infty \\frac{1 - 2^{k-1}}{z^k}}')"
+                 data-latex="f(z) = \sum_{k=1}^\infty \frac{1 - 2^{k-1}}{z^k} \quad (2 < |z| < \infty)"
+                 title="Click to copy LaTeX">
+                 $$ f(z) = \sum_{k=1}^\infty \frac{1 - 2^{k-1}}{z^k} \quad (2 < |z| < \infty) $$
+             </div>
+        </ul>
+        <!-- End of Taylor/Laurent content -->
+    </main>
+
+    <footer>
+        <!-- Optional: Add footer text if needed -->
+    </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div> <!-- Initial size display -->
+
+    <script>
+        // --- Formula Copy Function ---
+        function copyFormulaLatex(element, latexStringWithColor) {
+            if (!latexStringWithColor) {
+                console.error('No LaTeX data found passed to copy function.');
+                return;
+            }
+            // Extract the original LaTeX from data-latex attribute for copying
+            const originalLatex = element.getAttribute('data-latex');
+             if (!originalLatex) {
+                 console.error('No original LaTeX data found in data-latex attribute.');
+                 // Fallback to using the colored string if needed, but remove the color command
+                 latexStringWithColor = latexStringWithColor.replace('\\color{white}{', '').slice(0, -1);
+                 navigator.clipboard.writeText(latexStringWithColor).then(() => { /*...*/ }).catch(err => { /*...*/ });
+                 return; // Or handle fallback differently
+             }
+
+            navigator.clipboard.writeText(originalLatex).then(() => {
+                element.classList.add('copied');
+                const originalTitle = element.title;
+                element.title = 'Copied: ' + originalLatex; // Show what was copied
+                setTimeout(() => {
+                    element.classList.remove('copied');
+                    element.title = originalTitle; // Restore original title
+                 }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy LaTeX: ', err);
+                // Optionally provide user feedback about the failure
+                const originalTitle = element.title;
+                element.title = 'Copy failed!';
+                 setTimeout(() => { element.title = originalTitle; }, 1500);
+            });
+        }
+
+        // --- Font Size Control & Hold Functionality ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body; // Target body for transition class
+
+            // Configuration
+            let currentSize = 10; // Initial size set to 10px
+            const minSize = 10;
+            const maxSize = 28; // Adjust max size if needed
+            const step = 1;
+            let displayTimeout = null;
+            let holdTimeout = null;
+            let holdInterval = null;
+            const initialHoldDelay = 400; // ms before repeat starts
+            const repeatInterval = 100;  // ms between repeats while holding
+            const mathJaxDebounceDelay = 350; // ms to wait after last change before re-typesetting
+
+            // --- Debounce Function ---
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => { clearTimeout(timeout); func(...args); };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // --- Debounced MathJax Typesetting ---
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax");
+                    // Target the main content area for re-typesetting if possible
+                    const mainContent = document.querySelector('main');
+                    const targetElement = mainContent || bodyEl; // Fallback to body
+                    MathJax.typesetPromise([targetElement]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            // --- Update Font Size and Display ---
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px';
+                    display.classList.add('visible');
+
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => {
+                        display.classList.remove('visible');
+                        displayTimeout = null;
+                    }, 1500);
+
+                    // Don't queue MathJax immediately, wait for hold to potentially finish
+                    // queueMathJaxTypeset(); // Removed from here
+                    return true; // Indicate size changed
+                }
+                return false; // Indicate size hit limit
+            }
+
+            // --- Stop Holding Action ---
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition'); // Re-enable transition
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                // When holding stops, trigger MathJax update
+                queueMathJaxTypeset();
+            }
+
+            // --- Start Holding Action ---
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); // OPTIONAL: Disable transition during hold
+                updateFontSize(currentSize + direction * step); // Initial action
+                stopHolding(); // Clear previous timers before starting new ones
+
+                holdTimeout = setTimeout(() => {
+                    // After initial delay, start repeating
+                    holdInterval = setInterval(() => {
+                        if (!updateFontSize(currentSize + direction * step)) {
+                            stopHolding(); // Stop if size limit is reached
+                        }
+                    }, repeatInterval);
+                }, initialHoldDelay);
+            }
+
+            // --- Event Listeners ---
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                // Use 'pointerup' and 'pointerleave' for better touch/mouse handling
+                window.addEventListener('pointerup', stopHolding);
+                minusBtn.addEventListener('pointerleave', stopHolding);
+                plusBtn.addEventListener('pointerleave', stopHolding);
+
+                // Set initial state
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+                 // Initial MathJax typeset on load (after ready)
+                 if (window.MathJax) {
+                     MathJax.startup.promise.then(() => {
+                         console.log("Queueing initial MathJax typeset");
+                         queueMathJaxTypeset(); // Use the debounced version even initially
+                     });
+                 }
+            } else {
+                console.error("Font control elements not found!");
+            }
+
+            // --- Horizontal Scroll Redirect for Formula Containers ---
+             const formulaContainers = document.querySelectorAll('.formula-container');
+             formulaContainers.forEach(container => {
+                 container.addEventListener('wheel', function(event) {
+                     // Only act if the container is actually scrollable horizontally
+                     const isScrollableHorizontally = this.scrollWidth > this.clientWidth;
+                     // Only act if there's vertical scroll intent (deltaY) and not horizontal (deltaX)
+                     const isVerticalScroll = event.deltaY !== 0 && event.deltaX === 0;
+
+                     if (isScrollableHorizontally && isVerticalScroll) {
+                         event.preventDefault(); // Prevent the default vertical page scroll
+                         // Adjust scrollLeft based on deltaY. Might need scaling depending on desired sensitivity.
+                         this.scrollLeft += event.deltaY;
+                     }
+                     // If isScrollableHorizontally is false, or if it's already horizontal scroll (event.deltaX != 0),
+                     // the default behavior (vertical page scroll or horizontal container scroll) will occur.
+                 }, { passive: false }); // passive: false is needed to call preventDefault()
+             });
+             console.log("Horizontal scroll override applied to formula containers.");
+
+        });
+    </script>
+
+</body>
+</html>

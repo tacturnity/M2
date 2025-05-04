@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;"> <!-- Default font size set to 10px -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Residues and Poles</title> <!-- UPDATED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: {
+            ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); }
+          }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes for Animations (FadeIn) */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Fonts & Base Styling */
+        body {
+            font-family: 'Roboto Mono', monospace;
+            color: #e0e0e0;
+            line-height: 1.7;
+            padding: 25px;
+            background-color: #1a1a1a;
+            min-height: 100vh;
+            font-size: var(--base-font-size); /* Controlled by JS */
+            transition: font-size 0.2s ease-in-out; /* Default smooth transition */
+            padding-bottom: 80px; /* Space for controls */
+            overflow-x: hidden;
+        }
+        /* Class to disable transition during rapid changes (e.g., hold) */
+        body.no-font-transition {
+            transition: none !important;
+        }
+
+        /* Headings */
+        h1, h2 { font-family: 'Roboto Mono', monospace; text-align: center; margin-bottom: 1.5em; }
+        h1 { font-size: 2.4em; color: #ffffff; font-weight: 700; padding-bottom: 12px; margin-top: 1.5em; margin-bottom: 1.5em; border-bottom: 2px solid #ffffff; animation: fadeIn 0.8s ease-out both; animation-delay: 0.1s; letter-spacing: -0.5px; }
+        h2 { font-size: 1.6em; color: #cccccc; font-weight: 500; margin-top: 30px; margin-bottom: 1.5em; border-bottom: 1px solid #555555; padding-bottom: 5px; animation: fadeIn 0.8s ease-out both; animation-delay: 0.3s; }
+        h3 { font-size: 1.2em; color: #bdbdbd; font-weight: 500; margin-top: 1.8em; margin-bottom: 0.8em; padding-bottom: 3px; border-bottom: 1px dotted #444; }
+        h4 { font-size: 1.1em; color: #cacaca; margin-bottom: 0.5em; padding-bottom: 2px; border-bottom: 1px dotted #555; margin-top: 1.5em;} /* Added h4 style */
+
+
+        /* Main Content Area */
+        main { max-width: 800px; margin: 40px auto; background-color: rgba(30, 30, 30, 0.85); padding: 35px 45px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.1); animation: fadeIn 0.8s ease-out both; animation-delay: 0.2s; }
+        /* Paragraph and List styling */
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; list-style: disc; margin-bottom: 1em; }
+        ol { list-style: decimal; }
+        li { margin-bottom: 8px; font-size: inherit; }
+        strong { font-weight: 500; color: #ffffff; }
+        em { font-style: italic; color: #ababab; } /* Style for italic/emphasis */
+        blockquote { margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(40, 40, 40, 0.7); border-left: 4px solid #666; color: #d0d0d0; }
+        blockquote p { margin-bottom: 0.5em; }
+        blockquote h4 { font-size: 1.1em; color: #cacaca; margin-bottom: 0.5em; padding-bottom: 2px; border-bottom: 1px dotted #555; } /* Style for headings inside blockquotes */
+
+
+        /* Formula Container Styling (with horizontal scroll) */
+        .formula-container {
+            margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(45, 45, 45, 0.9);
+            border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-x: auto; overflow-y: hidden; /* Horizontal scroll, no vertical */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            cursor: pointer; color: #e0e0e0; border-left: 4px solid transparent;
+            font-family: 'Roboto Mono', monospace; position: relative; white-space: nowrap;
+        }
+        .formula-container:hover { background-color: rgba(60, 60, 60, 0.95); border-left-color: #a6e3a1; border-color: rgba(166, 227, 161, 0.5); }
+        .formula-container.copied { background-color: rgba(166, 227, 161, 0.2); border-color: #a6e3a1; border-left-color: #a6e3a1; }
+        /* Optional Scrollbar Style */
+        .formula-container::-webkit-scrollbar { height: 8px; }
+        .formula-container::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.5); border-radius: 4px; }
+        .formula-container::-webkit-scrollbar-thumb { background-color: #888; border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        .formula-container::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
+        /* MathJax display style */
+        .formula-container mjx-container[display="true"] { margin: 0.5em 0 !important; text-align: left !important; display: inline-block; vertical-align: middle; }
+
+        /* Footer Styling */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both; animation-delay: 0.7s; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+        /* Font Control Icons CSS */
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: #a6e3a1; }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Residues and Poles</h1> <!-- UPDATED H1 -->
+    </header>
+
+    <main>
+        <!-- ==== SECTION: Isolated Singular Points (68) ==== -->
+        <h2>Section 68: Isolated Singular Points</h2>
+
+        <h3>Singular Point</h3>
+        <p>A point $z_0$ where a function $f$ fails to be analytic, but $f$ <em>is</em> analytic at some point in every neighborhood of $z_0$.</p>
+
+        <h3>Isolated Singular Point</h3>
+        <p>A singular point $z_0$ such that there exists a <em>deleted neighborhood</em> $0 < |z - z_0| < \epsilon$ throughout which $f$ <em>is</em> analytic. This means the singularity is "alone", not part of a line or region of singularities.</p>
+
+        <h4>Example 1</h4>
+        <p>$f(z) = (z+1) / [z^3(z^2+1)]$. Singularities are where the denominator is zero: $z=0$, $z=i$, $z=-i$. Each of these is isolated because you can draw a small circle around each one that doesn't contain any other singularity.</p>
+
+        <h4>Example 2</h4>
+        <p>$f(z) = \text{Log } z$ (principal branch). The point $z=0$ is a singular point. However, it's <strong>not isolated</strong> because <em>every</em> deleted neighborhood $0 < |z| < \epsilon$ contains points on the negative real axis, where this branch of Log z is not analytic (it's the branch cut).</p>
+
+        <h4>Example 3</h4>
+        <p>$f(z) = 1 / \sin(\pi/z)$. Singularities occur when $\sin(\pi/z) = 0$, which means $\pi/z = n\pi$ for $n = \pm 1, \pm 2, \dots$. So, singularities are $z = 1/n$. Also, $z=0$ is a singularity.</p>
+        <ul>
+            <li>Each $z = 1/n$ is isolated.</li>
+            <li>$z = 0$ is <strong>not isolated</strong> because any deleted neighborhood $0 < |z| < \epsilon$ contains points $z = 1/m$ for sufficiently large $m$ (where $1/m < \epsilon$). The singular points $1/m$ accumulate at $z=0$.</li>
+        </ul>
+
+        <h3>Point at Infinity</h3>
+        <p>We can also consider $z_0 = \infty$ as an isolated singular point if $f$ is analytic for all $|z| > R_1$ for some large radius $R_1$.</p>
+
+        <!-- ==== SECTION: Residues (69) ==== -->
+        <h2>Section 69: Residues</h2>
+
+        <h3>Concept</h3>
+        <p>When a function $f$ has an isolated singular point $z_0$, it has a Laurent series expansion valid in a punctured disk $0 < |z - z_0| < R_2$:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{f(z) = \\sum_{n=0}^\\infty a_n (z - z_0)^n + \\frac{b_1}{z - z_0} + \\frac{b_2}{(z - z_0)^2} + \\dots + \\frac{b_n}{(z - z_0)^n} + \\dots}')"
+             data-latex="f(z) = \sum_{n=0}^\infty a_n (z - z_0)^n + \frac{b_1}{z - z_0} + \frac{b_2}{(z - z_0)^2} + \dots + \frac{b_n}{(z - z_0)^n} + \dots"
+             title="Click to copy LaTeX">
+             $$ f(z) = \sum_{n=0}^\infty a_n (z - z_0)^n + \frac{b_1}{z - z_0} + \frac{b_2}{(z - z_0)^2} + \dots + \frac{b_n}{(z - z_0)^n} + \dots $$
+        </div>
+
+        <h3>Definition</h3>
+        <p>The <strong>residue</strong> of $f$ at the isolated singular point $z_0$ is the coefficient $b_1$ of the $1/(z - z_0)$ term in this Laurent expansion. It is denoted as $\text{Res}_{z=z_0} f(z)$.</p>
+         <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{b_1 = \\text{Res}_{z=z_0} f(z)}')"
+             data-latex="b_1 = \text{Res}_{z=z_0} f(z)"
+             title="Click to copy LaTeX">
+             $$ b_1 = \text{Res}_{z=z_0} f(z) $$
+        </div>
+
+        <h3>Integral Formula</h3>
+        <p>From the definition of Laurent coefficients (Sec 60), we know: $b_n = (1 / 2\pi i) \int_C f(z) / (z - z_0)^{-n+1} dz$. Setting $n=1$, we get $b_1 = (1 / 2\pi i) \int_C f(z) dz$. Rearranging gives the fundamental relationship:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C f(z) dz = 2\\pi i \\cdot b_1 = 2\\pi i \\cdot \\text{Res}_{z=z_0} f(z)}')"
+             data-latex="\int_C f(z) dz = 2\pi i \cdot b_1 = 2\pi i \cdot \text{Res}_{z=z_0} f(z) \quad (Eq 3)"
+             title="Click to copy LaTeX">
+             $$ \int_C f(z) dz = 2\pi i \cdot b_1 = 2\pi i \cdot \text{Res}_{z=z_0} f(z) \quad (Eq 3) $$
+        </div>
+        <p>where $C$ is any positively oriented simple closed contour around $z_0$ within the punctured disk $0 < |z - z_0| < R_2$, and $z_0$ is the <em>only</em> singularity inside $C$.</p>
+
+        <h3>Significance</h3>
+        <p>This formula provides a powerful way to evaluate integrals by finding a single coefficient in a Laurent series.</p>
+
+        <h4>Example 1</h4>
+        <p>Evaluate $\int_C z^2 \sin(1/z) dz$ where $C$ is $|z|=1$.</p>
+        <ul>
+            <li>The integrand $f(z) = z^2 \sin(1/z)$ has an isolated singularity at $z=0$.</li>
+            <li>Find the Laurent series around $z=0$. Recall $\sin(w) = w - w^3/3! + w^5/5! - \dots$</li>
+            <li>Let $w = 1/z$: $\sin(1/z) = (1/z) - (1/z)^3/3! + (1/z)^5/5! - \dots = 1/z - 1/(6z^3) + 1/(120z^5) - \dots$</li>
+            <li>$f(z) = z^2 [1/z - 1/(6z^3) + 1/(120z^5) - \dots] = z - 1/(6z) + 1/(120z^3) - \dots$</li>
+            <li>The residue is the coefficient of $1/z$, which is $b_1 = -1/6$.</li>
+            <li>The integral is $2\pi i \cdot b_1 = 2\pi i \cdot (-1/6) = -\pi i / 3$.</li>
+        </ul>
+
+        <h4>Example 2</h4>
+        <p>Evaluate $\int_C \exp(1/z^2) dz$ where $C$ is $|z|=1$.</p>
+        <ul>
+            <li>$f(z) = \exp(1/z^2)$. Singularity at $z=0$.</li>
+            <li>$e^w = 1 + w/1! + w^2/2! + \dots$. Let $w = 1/z^2$.</li>
+            <li>$\exp(1/z^2) = 1 + (1/z^2)/1! + (1/z^2)^2/2! + \dots = 1 + 1/z^2 + 1/(2z^4) + 1/(6z^6) + \dots$</li>
+            <li>The Laurent series has no $1/z$ term. The coefficient $b_1$ is 0.</li>
+            <li>The residue is 0. The integral is $2\pi i \cdot 0 = 0$.</li>
+            <li><em>(Note: This shows that even if a function has a singularity inside C, the integral can still be zero if the residue is zero).</em></li>
+        </ul>
+
+        <h4>Example 3</h4>
+        <p>Evaluate $\int_C dz / [z(z-2)^4]$ where $C$ is $|z-2|=1$.</p>
+        <ul>
+            <li>The contour $C$ encloses the singularity $z_0=2$ but not $z=0$.</li>
+            <li>We need the residue at $z=2$. This requires the Laurent series centered at $z=2$, valid in $0 < |z-2| < 2$.</li>
+            <li>Let $f(z) = 1 / [z(z-2)^4]$. We need the coefficient of $1/(z-2)$.</li>
+            <li>Rewrite $1/z$ in terms of $(z-2)$: $1/z = 1 / [2 + (z-2)] = (1/2) / [1 + (z-2)/2]$.</li>
+            <li>Since $|z-2| = 1$, we have $|(z-2)/2| = 1/2 < 1$. Use geometric series $1/(1+w) = 1 - w + w^2 - \dots$:
+                $1/z = (1/2) [1 - (z-2)/2 + (z-2)^2/4 - (z-2)^3/8 + \dots]$</li>
+            <li>$f(z) = [1 / (z-2)^4] \cdot (1/z) = [1 / (z-2)^4] \cdot (1/2) [1 - (z-2)/2 + (z-2)^2/4 - (z-2)^3/8 + \dots]$</li>
+            <li>$f(z) = (1/2) [1/(z-2)^4 - 1/(2(z-2)^3) + 1/(4(z-2)^2) - 1/(8(z-2)) + \dots]$</li>
+            <li>The coefficient of $1/(z-2)$ is $b_1 = (1/2) \cdot (-1/8) = -1/16$.</li>
+            <li>The integral is $2\pi i \cdot b_1 = 2\pi i \cdot (-1/16) = -\pi i / 8$.</li>
+        </ul>
+
+        <!-- ==== SECTION: Cauchy's Residue Theorem (70) ==== -->
+        <h2>Section 70: Cauchy's Residue Theorem</h2>
+
+        <h3>Statement</h3>
+        <blockquote>
+            <p>Let $C$ be a simple closed contour, positively oriented. If $f$ is analytic inside and on $C$ except for a finite number of isolated singular points $z_1, z_2, \dots, z_n$ <em>inside</em> $C$, then:</p>
+            <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{\\int_C f(z) dz = 2\\pi i \\cdot \\sum_{k=1}^n \\text{Res}_{z=z_k} f(z)}')"
+                 data-latex="\int_C f(z) dz = 2\pi i \cdot \sum_{k=1}^n \text{Res}_{z=z_k} f(z)"
+                 title="Click to copy LaTeX">
+                 $$ \int_C f(z) dz = 2\pi i \cdot \sum_{k=1}^n \text{Res}_{z=z_k} f(z) $$
+            </div>
+        </blockquote>
+
+        <h3>Interpretation</h3>
+        <p>The integral of $f$ around $C$ is $2\pi i$ times the <em>sum</em> of the residues at all the singularities enclosed by $C$.</p>
+
+        <h3>Proof Idea</h3>
+        <p>Surround each $z_k$ with a small circle $C_k$ such that all $C_k$ are disjoint and inside $C$. Apply the Cauchy-Goursat theorem for multiply connected domains to the region inside $C$ and outside all $C_k$. This gives $\int_C f dz - \sum \int_{C_k} f dz = 0$. But $\int_{C_k} f dz = 2\pi i \text{Res}_{z=z_k} f(z)$, so the result follows.</p>
+
+        <h4>Example</h4>
+        <p>Evaluate $\int_C (5z-2) / [z(z-1)] dz$ where $C$ is $|z|=2$.</p>
+        <ul>
+            <li>Singularities inside $C$ are $z_1=0$ and $z_2=1$.</li>
+            <li>Need $\text{Res}_{z=0} f(z)$ and $\text{Res}_{z=1} f(z)$.</li>
+            <li>Near $z=0$ (for $0 < |z| < 1$): $f(z) = (5z-2)/z \cdot [-1/(1-z)] = (5z-2)/z \cdot [-1 - z - z^2 - \dots]$
+                $f(z) = (2/z - 5) \cdot (1 + z + z^2 + \dots) = (2/z + 2 + 2z + \dots) - (5 + 5z + 5z^2 + \dots)$
+                $f(z) = 2/z - 3 - 3z - \dots$. The residue at $z=0$ is $B_1 = 2$.
+            </li>
+            <li>Near $z=1$ (for $0 < |z-1| < 1$): Let $w = z-1$, $z = w+1$.
+                $f(z) = (5(w+1)-2) / [(w+1)w] = (5w+3) / [w(1+w)]$
+                $f(z) = (1/w) \cdot (5w+3) \cdot (1/(1+w)) = (1/w) \cdot (5w+3) \cdot (1 - w + w^2 - \dots)$
+                $f(z) = (1/w) \cdot [(5w+3) - w(5w+3) + \dots] = (1/w) \cdot [3 + 2w + O(w^2)] = 3/w + 2 + \dots$
+                The residue (coefficient of $1/w = 1/(z-1)$) at $z=1$ is $B_2 = 3$.
+            </li>
+            <li>By Residue Theorem: $\int_C f(z) dz = 2\pi i \cdot (B_1 + B_2) = 2\pi i \cdot (2 + 3) = 10\pi i$.</li>
+            <li><em>(Alternative using partial fractions):</em> $f(z) = 2/z + 3/(z-1)$. This is already the sum of Laurent series around their respective centers. Residue at 0 is 2, residue at 1 is 3. Integral is $2\pi i(2) + 2\pi i(3) = 10\pi i$.</li>
+        </ul>
+
+        <!-- ==== SECTION: Residue at Infinity (71) ==== -->
+        <h2>Section 71: Residue at Infinity</h2>
+
+        <h3>Concept</h3>
+        <p>If $f$ is analytic for $|z| > R_1$ (outside some circle), then $z=\infty$ is an isolated singular point.</p>
+
+        <h3>Definition</h3>
+        <p>The residue at infinity is defined via an integral around a <strong>clockwise</strong> contour $C_0$ (like $|z|=R > R_1$) enclosing all finite singularities:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_{C_0} f(z) dz = 2\\pi i \\text{Res}_{z=\\infty} f(z)}')"
+             data-latex="\int_{C_0} f(z) dz = 2\pi i \text{Res}_{z=\infty} f(z)"
+             title="Click to copy LaTeX">
+             $$ \int_{C_0} f(z) dz = 2\pi i \text{Res}_{z=\infty} f(z) $$
+        </div>
+
+        <h3>Relationship to Finite Residues</h3>
+        <p>If $f$ is analytic everywhere except for a finite number of singularities $z_1, \dots, z_n$, then $\int_C f(z) dz = - \int_{C_0} f(z) dz$, where $C$ is a positively oriented contour enclosing all $z_k$, and $C_0$ is a negatively oriented contour enclosing all $z_k$. Using the Residue Theorem for $C$ and the definition for $C_0$ leads to:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\sum_{k=1}^n \\text{Res}_{z=z_k} f(z) = - \\text{Res}_{z=\\infty} f(z)}')"
+             data-latex="\sum_{k=1}^n \text{Res}_{z=z_k} f(z) = - \text{Res}_{z=\infty} f(z)"
+             title="Click to copy LaTeX">
+             $$ \sum_{k=1}^n \text{Res}_{z=z_k} f(z) = - \text{Res}_{z=\infty} f(z) $$
+        </div>
+        <p>The sum of <strong>all</strong> residues (including infinity) is zero.</p>
+
+        <h3>Calculation Trick</h3>
+        <p>There's a useful formula relating the residue at infinity to the residue at zero of a transformed function:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\text{Res}_{z=\\infty} f(z) = - \\text{Res}_{w=0} \\left[ \\frac{1}{w^2} f\\left(\\frac{1}{w}\\right) \\right]}')"
+             data-latex="\text{Res}_{z=\infty} f(z) = - \text{Res}_{w=0} \left[ \frac{1}{w^2} f\left(\frac{1}{w}\right) \right] \quad (\text{Eq 6 & 7 combined})"
+             title="Click to copy LaTeX">
+             $$ \text{Res}_{z=\infty} f(z) = - \text{Res}_{w=0} \left[ \frac{1}{w^2} f\left(\frac{1}{w}\right) \right] \quad (\text{Eq 6 & 7 combined}) $$
+        </div>
+
+        <h4>Example</h4>
+        <p>$f(z) = (5z-2) / [z(z-1)]$ from before.</p>
+        <ul>
+            <li>Find $\text{Res}_{z=\infty} f(z)$. Use the trick. Let $w = 1/z$.</li>
+            <li>$f(1/w) = (5/w - 2) / [(1/w)(1/w - 1)] = ( (5-2w)/w ) / [ (1-w)/w^2 ] = w(5-2w) / (1-w)$</li>
+            <li>$(1/w^2) f(1/w) = (1/w^2) \cdot [w(5-2w) / (1-w)] = (5-2w) / [w(1-w)]$</li>
+            <li>We need the residue of $g(w) = (5-2w) / [w(1-w)]$ at $w=0$.</li>
+            <li>$g(w) = (1/w) \cdot (5-2w) \cdot (1/(1-w)) = (1/w) \cdot (5-2w) \cdot (1 + w + w^2 + \dots)$</li>
+            <li>$g(w) = (1/w) \cdot [5 + 5w + 5w^2 + \dots - 2w - 2w^2 - \dots] = (1/w) \cdot [5 + 3w + 3w^2 + \dots]$</li>
+            <li>$g(w) = 5/w + 3 + 3w + \dots$</li>
+            <li>$\text{Res}_{w=0} g(w) = 5$.</li>
+            <li>Therefore, $\text{Res}_{z=\infty} f(z) = - \text{Res}_{w=0} g(w) = -5$.</li>
+            <li>Check: $\text{Res}(z=0) + \text{Res}(z=1) + \text{Res}(z=\infty) = 2 + 3 + (-5) = 0$. Correct.</li>
+        </ul>
+
+        <h3>Theorem using Residue at Infinity</h3>
+        <p>If $f$ is analytic except for finite singularities $z_k$ inside $C$, then the integral around $C$ can be calculated using the residue at infinity:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\int_C f(z) dz = 2\\pi i \\cdot \\text{Res}_{w=0} \\left[ \\frac{1}{w^2} f\\left(\\frac{1}{w}\\right) \\right]}')"
+             data-latex="\int_C f(z) dz = 2\pi i \cdot \text{Res}_{w=0} \left[ \frac{1}{w^2} f\left(\frac{1}{w}\right) \right] \quad (\text{Eq 7})"
+             title="Click to copy LaTeX">
+             $$ \int_C f(z) dz = 2\pi i \cdot \text{Res}_{w=0} \left[ \frac{1}{w^2} f\left(\frac{1}{w}\right) \right] \quad (\text{Eq 7}) $$
+        </div>
+        <p>This sometimes requires calculating only one residue. For the example, $\int_C f(z) dz = 2\pi i \cdot 5 = 10\pi i$, matching the previous result.</p>
+
+        <!-- ==== SECTION: Classification of Isolated Singular Points (72) ==== -->
+        <h2>Section 72: Classification of Isolated Singular Points</h2>
+
+        <p>The behavior of $f(z)$ near an isolated singularity $z_0$ is determined by the <strong>principal part</strong> (the terms with negative powers) of its Laurent series $\sum b_n / (z - z_0)^n$.</p>
+
+        <h3>Case 1: Removable Singularity</h3>
+        <ul>
+            <li>All $b_n$ coefficients are zero. The Laurent series is just a Taylor series. $f(z) = \sum_{n=0}^\infty a_n (z - z_0)^n$.</li>
+            <li>The residue $b_1$ is zero.</li>
+            <li>By defining $f(z_0) = a_0$, the function becomes analytic at $z_0$. The singularity is "removed".</li>
+            <li><strong>Example 4:</strong> $f(z) = (1 - \cos z) / z^2 = (1 - (1-z^2/2!+z^4/4!-\dots))/z^2 = (z^2/2! - z^4/4! + \dots)/z^2 = 1/2! - z^2/4! + \dots$. No negative powers of $z$, so $z=0$ is removable. Residue is 0.</li>
+        </ul>
+
+        <h3>Case 2: Pole of Order <em>m</em></h3>
+        <ul>
+            <li>The principal part has a <em>finite</em> number of non-zero terms, with the highest power being $1/(z - z_0)^m$ (i.e., $b_m \ne 0$ but $b_{m+1} = b_{m+2} = \dots = 0$).</li>
+            <li>$f(z) = \sum_{n=0}^\infty a_n (z - z_0)^n + b_1/(z - z_0) + \dots + b_m/(z - z_0)^m$.</li>
+            <li>A pole of order $m=1$ is called a <strong>simple pole</strong>.</li>
+            <li>The residue $b_1$ may or may not be zero.</li>
+            <li>$|f(z)| \to \infty$ as $z \to z_0$.</li>
+            <li><strong>Example 1:</strong> $f(z) = (z^2 - 2z + 3) / (z - 2) = (z(z-2)+3)/(z-2) = z + 3/(z-2)$. Simple pole ($m=1$) at $z=2$. Residue $b_1 = 3$.</li>
+            <li><strong>Example 3:</strong> $f(z) = \sinh(z) / z^4 = (1/z^4) \cdot (z + z^3/3! + z^5/5! + \dots) = 1/z^3 + 1/(3! z) + z/5! + \dots$. Pole of order $m=3$ at $z=0$. Residue $b_1 = 1/3! = 1/6$.</li>
+        </ul>
+
+        <h3>Case 3: Essential Singularity</h3>
+        <ul>
+            <li>The principal part has an <em>infinite</em> number of non-zero $b_n$ coefficients.</li>
+            <li>The residue $b_1$ may or may not be zero.</li>
+            <li>The behavior near $z_0$ is wild. <strong>Picard's Theorem</strong> states that in any neighborhood of an essential singularity, $f(z)$ takes on <em>every</em> complex value, with possibly one exception, infinitely often.</li>
+            <li><strong>Example 5:</strong> $f(z) = e^{1/z} = 1 + 1/z + 1/(2!z^2) + 1/(3!z^3) + \dots$. Infinite negative powers. Essential singularity at $z=0$. Residue $b_1 = 1$.</li>
+        </ul>
+
+        <!-- ==== SECTION: Residues at Poles (73 & 74) ==== -->
+        <h2>Sections 73 & 74: Residues at Poles</h2>
+
+        <p>Finding the full Laurent series just to get $b_1$ can be tedious, especially for poles. These theorems provide shortcuts.</p>
+
+        <h3>Theorem (Characterization of Poles)</h3>
+        <blockquote>
+            <p>An isolated singular point $z_0$ is a pole of order $m$ if and only if $f(z)$ can be written as:</p>
+            <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{f(z) = \\frac{\\phi(z)}{(z - z_0)^m}}')"
+                 data-latex="f(z) = \frac{\phi(z)}{(z - z_0)^m}"
+                 title="Click to copy LaTeX">
+                 $$ f(z) = \frac{\phi(z)}{(z - z_0)^m} $$
+            </div>
+            <p>where $\phi(z)$ is <strong>analytic</strong> and <strong>non-zero</strong> at $z_0$ ($\phi(z_0) \ne 0$).</p>
+        </blockquote>
+
+        <h3>Residue Formulas</h3>
+        <ul>
+            <li>If $m = 1$ (<strong>Simple Pole</strong>):</li>
+                 <div class="formula-container"
+                     onclick="copyFormulaLatex(this, '\\color{white}{\\text{Res}_{z=z_0} f(z) = \\phi(z_0)}')"
+                     data-latex="\text{Res}_{z=z_0} f(z) = \phi(z_0)"
+                     title="Click to copy LaTeX">
+                     $$ \text{Res}_{z=z_0} f(z) = \phi(z_0) $$
+                </div>
+             <li>If $m \ge 2$ (<strong>Pole of order m</strong>):</li>
+                 <div class="formula-container"
+                     onclick="copyFormulaLatex(this, '\\color{white}{\\text{Res}_{z=z_0} f(z) = \\frac{\\phi^{(m-1)}(z_0)}{(m-1)!}}')"
+                     data-latex="\text{Res}_{z=z_0} f(z) = \frac{\phi^{(m-1)}(z_0)}{(m-1)!}"
+                     title="Click to copy LaTeX">
+                     $$ \text{Res}_{z=z_0} f(z) = \frac{\phi^{(m-1)}(z_0)}{(m-1)!} $$
+                </div>
+                <p>(where $\phi^{(m-1)}$ is the (m-1)-th derivative).</p>
+        </ul>
+        <p><em>(Proof Idea): Write the Taylor series for $\phi(z)$ around $z_0$: $\phi(z) = \phi(z_0) + \phi'(z_0)(z-z_0) + \dots$. Divide by $(z-z_0)^m$. The resulting Laurent series for $f(z)$ has $1/(z-z_0)$ term coefficient matching the formula. Conversely, if $f(z)$ has a pole of order $m$, its Laurent series can be used to define the required $\phi(z)$.)</em></p>
+
+        <h4>Example 1</h4>
+        <p>$f(z) = (z+1) / (z^2+9)$. Singularity at $z=3i$.</p>
+        <ul>
+            <li>Write $f(z) = [(z+1)/(z+3i)] / (z-3i)$.</li>
+            <li>Here $m=1$ (simple pole). $\phi(z) = (z+1)/(z+3i)$.</li>
+            <li>$\phi(z)$ is analytic at $z=3i$. $\phi(3i) = (3i+1)/(3i+3i) = (1+3i)/(6i) = (1+3i)(-i)/(6i)(-i) = (-i-3i^2)/6 = (3-i)/6$.</li>
+            <li>Residue = $\phi(3i) = (3-i)/6$.</li>
+        </ul>
+
+        <h4>Example 2</h4>
+        <p>$f(z) = (z^3+2z) / (z-i)^3$. Singularity at $z=i$.</p>
+        <ul>
+            <li>Form matches: $m=3$. $\phi(z) = z^3+2z$.</li>
+            <li>$\phi(z)$ is entire (analytic) and $\phi(i) = i^3+2i = -i+2i = i \ne 0$. Pole of order 3.</li>
+            <li>Need $\phi''(i)$. $\phi'(z) = 3z^2+2$. $\phi''(z) = 6z$.</li>
+            <li>$\phi''(i) = 6i$.</li>
+            <li>Residue = $\phi''(i) / (3-1)! = \phi''(i) / 2! = 6i / 2 = 3i$.</li>
+        </ul>
+
+        <h4>Example 4 (Important Note)</h4>
+        <p>$f(z) = \sinh(z) / z^4$. Cannot write $f(z) = \phi(z)/z^4$ with $\phi(0) \ne 0$ because if $\phi(z) = \sinh(z)$, then $\sinh(0) = 0$. The theorem condition $\phi(z_0) \ne 0$ is not met. Must use Laurent series directly (as in Sec 72 Ex 3) which showed it's a pole of order 3 with residue 1/6.</p>
+
+        <h4>Example 5</h4>
+        <p>$f(z) = 1 / [z(e^z - 1)]$. Singularity at $z=0$.</p>
+        <ul>
+             <li>Denominator $q(z) = z(e^z - 1)$. $q(0)=0$. $q'(z) = (e^z - 1) + z e^z$. $q'(0)=0$. $q''(z) = e^z + e^z + z e^z = 2e^z + z e^z$. $q''(0)=2 \ne 0$. So, denominator has a zero of order 2 at $z=0$.</li>
+             <li>Write $z(e^z - 1) = z(z + z^2/2! + z^3/3! + \dots) = z^2(1 + z/2! + z^2/3! + \dots)$.</li>
+             <li>So $f(z) = 1 / [z^2(1 + z/2! + z^2/3! + \dots)]$.</li>
+             <li>Let $\phi(z) = 1 / (1 + z/2! + z^2/3! + \dots)$. This $\phi(z)$ is analytic at $z=0$ and $\phi(0) = 1 \ne 0$.</li>
+             <li>Now $f(z) = \phi(z) / z^2$. Form matches with $m=2$. Pole of order 2.</li>
+             <li>Residue = $\phi'(0) / (2-1)! = \phi'(0)$.</li>
+             <li>Need $\phi'(z)$. Using quotient rule or chain rule: $\phi'(z) = - \frac{d/dz(1 + z/2! + z^2/3! + \dots)}{(1 + z/2! + z^2/3! + \dots)^2} = - \frac{(1/2! + 2z/3! + \dots)}{(1 + z/2! + \dots )^2}$.</li>
+             <li>$\phi'(0) = - (1/2!) / (1)^2 = -1/2$.</li>
+             <li>Residue = -1/2.</li>
+        </ul>
+
+        <!-- ==== SECTION: Zeros and Poles (75 & 76) ==== -->
+        <h2>Sections 75 & 76: Zeros and Poles</h2>
+
+        <h3>Zero of Order <em>m</em></h3>
+        <p>A function $f$ analytic at $z_0$ has a zero of order $m$ if $f(z_0) = f'(z_0) = \dots = f^{(m-1)}(z_0) = 0$ but $f^{(m)}(z_0) \ne 0$.</p>
+
+        <h4>Theorem 1 (Sec 75): Characterization of Zeros</h4>
+        <blockquote><p>$f$ has a zero of order $m$ at $z_0$ if and only if $f(z) = (z - z_0)^m g(z)$ where $g(z)$ is analytic and <strong>non-zero</strong> at $z_0$.</p></blockquote>
+
+        <h4>Theorem 2 (Sec 75): Isolation of Zeros</h4>
+        <blockquote><p>Zeros of an analytic function (that isn't identically zero) are <strong>isolated</strong>.</p></blockquote>
+
+        <h4>Theorem 1 (Sec 76): Poles from Quotients</h4>
+        <blockquote><p>If $p(z)$ and $q(z)$ are analytic at $z_0$, and $p(z_0) \ne 0$ while $q(z)$ has a zero of order $m$ at $z_0$, then the quotient $p(z)/q(z)$ has a <strong>pole of order $m$</strong> at $z_0$.</p></blockquote>
+        <p><em>(Proof uses Thm 1 from Sec 75 for $q(z)$ and Thm from Sec 73).</em></p>
+
+        <h4>Theorem 2 (Sec 76): Shortcut for Simple Poles of Quotients</h4>
+        <blockquote>
+            <p>If $p(z_0) \ne 0$, $q(z_0) = 0$, and $q'(z_0) \ne 0$ (so $q$ has a simple zero at $z_0$), then $z_0$ is a <strong>simple pole</strong> of $p(z)/q(z)$ and:</p>
+            <div class="formula-container"
+                 onclick="copyFormulaLatex(this, '\\color{white}{\\text{Res}_{z=z_0} \\frac{p(z)}{q(z)} = \\frac{p(z_0)}{q\'(z_0)}}')"
+                 data-latex="\text{Res}_{z=z_0} \frac{p(z)}{q(z)} = \frac{p(z_0)}{q'(z_0)}"
+                 title="Click to copy LaTeX">
+                 $$ \text{Res}_{z=z_0} \frac{p(z)}{q(z)} = \frac{p(z_0)}{q'(z_0)} $$
+            </div>
+        </blockquote>
+        <p><em>(Proof uses $q(z) = (z-z_0)g(z)$ where $g(z_0)=q'(z_0)$). This is often much faster than the $\phi(z_0)$ method for simple poles of quotients.</em></p>
+
+        <h4>Example 2</h4>
+        <p>$f(z) = \cot z = \cos z / \sin z$. Poles where $\sin z = 0$, i.e., $z = n\pi$.</p>
+        <ul>
+            <li>Let $p(z) = \cos z$, $q(z) = \sin z$.</li>
+            <li>At $z_0 = n\pi$: $p(n\pi) = \cos(n\pi) = (-1)^n \ne 0$. $q(n\pi) = \sin(n\pi) = 0$. $q'(z) = \cos z$. $q'(n\pi) = \cos(n\pi) = (-1)^n \ne 0$.</li>
+            <li>Conditions met for Thm 2 (Sec 76). $z_0=n\pi$ is a simple pole.</li>
+            <li>Residue = $p(n\pi) / q'(n\pi) = (-1)^n / (-1)^n = 1$.</li>
+        </ul>
+
+        <h4>Example 4</h4>
+        <p>$f(z) = z / (z^4 + 4)$. Pole at $z_0 = 1+i$.</p>
+        <ul>
+            <li>Let $p(z) = z$, $q(z) = z^4 + 4$.</li>
+            <li>$p(z_0) = 1+i \ne 0$. $q(z_0) = (1+i)^4 + 4 = (-4) + 4 = 0$. $q'(z) = 4z^3$. $q'(z_0) = 4(1+i)^3 = 4(-2+2i) \ne 0$.</li>
+            <li>Conditions met. $z_0=1+i$ is a simple pole.</li>
+            <li>Residue = $p(z_0) / q'(z_0) = (1+i) / [4(1+i)^3] = 1 / [4(1+i)^2] = 1 / [4(2i)] = 1 / (8i) = -i / 8$.</li>
+        </ul>
+
+    </main>
+
+    <footer>
+        <!-- Optional: Add footer text if needed -->
+    </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div> <!-- Initial size display -->
+
+    <script>
+        // --- Formula Copy Function ---
+        function copyFormulaLatex(element, latexStringWithColor) {
+            if (!latexStringWithColor) {
+                console.error('No LaTeX data found passed to copy function.');
+                return;
+            }
+            // Extract the original LaTeX from data-latex attribute for copying
+            const originalLatex = element.getAttribute('data-latex');
+             if (!originalLatex) {
+                 console.error('No original LaTeX data found in data-latex attribute.');
+                 // Fallback to using the colored string if needed, but remove the color command
+                 latexStringWithColor = latexStringWithColor.replace('\\color{white}{', '').slice(0, -1);
+                 navigator.clipboard.writeText(latexStringWithColor).then(() => { /*...*/ }).catch(err => { /*...*/ });
+                 return; // Or handle fallback differently
+             }
+
+            navigator.clipboard.writeText(originalLatex).then(() => {
+                element.classList.add('copied');
+                const originalTitle = element.title;
+                element.title = 'Copied: ' + originalLatex; // Show what was copied
+                setTimeout(() => {
+                    element.classList.remove('copied');
+                    element.title = originalTitle; // Restore original title
+                 }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy LaTeX: ', err);
+                // Optionally provide user feedback about the failure
+                const originalTitle = element.title;
+                element.title = 'Copy failed!';
+                 setTimeout(() => { element.title = originalTitle; }, 1500);
+            });
+        }
+
+        // --- Font Size Control & Hold Functionality ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body; // Target body for transition class
+
+            // Configuration
+            let currentSize = 10; // Initial size set to 10px
+            const minSize = 10;
+            const maxSize = 28; // Adjust max size if needed
+            const step = 1;
+            let displayTimeout = null;
+            let holdTimeout = null;
+            let holdInterval = null;
+            const initialHoldDelay = 400; // ms before repeat starts
+            const repeatInterval = 100;  // ms between repeats while holding
+            const mathJaxDebounceDelay = 350; // ms to wait after last change before re-typesetting
+
+            // --- Debounce Function ---
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => { clearTimeout(timeout); func(...args); };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // --- Debounced MathJax Typesetting ---
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax");
+                    // Target the main content area for re-typesetting if possible
+                    const mainContent = document.querySelector('main');
+                    const targetElement = mainContent || bodyEl; // Fallback to body
+                    MathJax.typesetPromise([targetElement]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            // --- Update Font Size and Display ---
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px';
+                    display.classList.add('visible');
+
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => {
+                        display.classList.remove('visible');
+                        displayTimeout = null;
+                    }, 1500);
+
+                    // Don't queue MathJax immediately, wait for hold to potentially finish
+                    // queueMathJaxTypeset(); // Removed from here
+                    return true; // Indicate size changed
+                }
+                return false; // Indicate size hit limit
+            }
+
+            // --- Stop Holding Action ---
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition'); // Re-enable transition
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                // When holding stops, trigger MathJax update
+                queueMathJaxTypeset();
+            }
+
+            // --- Start Holding Action ---
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); // OPTIONAL: Disable transition during hold
+                updateFontSize(currentSize + direction * step); // Initial action
+                stopHolding(); // Clear previous timers before starting new ones
+
+                holdTimeout = setTimeout(() => {
+                    // After initial delay, start repeating
+                    holdInterval = setInterval(() => {
+                        if (!updateFontSize(currentSize + direction * step)) {
+                            stopHolding(); // Stop if size limit is reached
+                        }
+                    }, repeatInterval);
+                }, initialHoldDelay);
+            }
+
+            // --- Event Listeners ---
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                // Use 'pointerup' and 'pointerleave' for better touch/mouse handling
+                window.addEventListener('pointerup', stopHolding);
+                minusBtn.addEventListener('pointerleave', stopHolding);
+                plusBtn.addEventListener('pointerleave', stopHolding);
+
+                // Set initial state
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+                 // Initial MathJax typeset on load (after ready)
+                 if (window.MathJax) {
+                     MathJax.startup.promise.then(() => {
+                         console.log("Queueing initial MathJax typeset");
+                         queueMathJaxTypeset(); // Use the debounced version even initially
+                     });
+                 }
+            } else {
+                console.error("Font control elements not found!");
+            }
+
+            // --- Horizontal Scroll Redirect for Formula Containers ---
+             const formulaContainers = document.querySelectorAll('.formula-container');
+             formulaContainers.forEach(container => {
+                 container.addEventListener('wheel', function(event) {
+                     // Only act if the container is actually scrollable horizontally
+                     const isScrollableHorizontally = this.scrollWidth > this.clientWidth;
+                     // Only act if there's vertical scroll intent (deltaY) and not horizontal (deltaX)
+                     const isVerticalScroll = event.deltaY !== 0 && event.deltaX === 0;
+
+                     if (isScrollableHorizontally && isVerticalScroll) {
+                         event.preventDefault(); // Prevent the default vertical page scroll
+                         // Adjust scrollLeft based on deltaY. Might need scaling depending on desired sensitivity.
+                         this.scrollLeft += event.deltaY;
+                     }
+                     // If isScrollableHorizontally is false, or if it's already horizontal scroll (event.deltaX != 0),
+                     // the default behavior (vertical page scroll or horizontal container scroll) will occur.
+                 }, { passive: false }); // passive: false is needed to call preventDefault()
+             });
+             console.log("Horizontal scroll override applied to formula containers.");
+
+        });
+    </script>
+
+</body>
+</html>

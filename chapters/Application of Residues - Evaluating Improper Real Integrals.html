@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;"> <!-- Default font size set to 10px -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application of Residues: Improper Real Integrals</title> <!-- UPDATED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: {
+            ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); }
+          }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes for Animations (FadeIn) */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Fonts & Base Styling */
+        body {
+            font-family: 'Roboto Mono', monospace;
+            color: #e0e0e0;
+            line-height: 1.7;
+            padding: 25px;
+            background-color: #1a1a1a;
+            min-height: 100vh;
+            font-size: var(--base-font-size); /* Controlled by JS */
+            transition: font-size 0.2s ease-in-out; /* Default smooth transition */
+            padding-bottom: 80px; /* Space for controls */
+            overflow-x: hidden;
+        }
+        /* Class to disable transition during rapid changes (e.g., hold) */
+        body.no-font-transition {
+            transition: none !important;
+        }
+
+        /* Headings */
+        h1, h2 { font-family: 'Roboto Mono', monospace; text-align: center; margin-bottom: 1.5em; }
+        h1 { font-size: 2.4em; color: #ffffff; font-weight: 700; padding-bottom: 12px; margin-top: 1.5em; margin-bottom: 1.5em; border-bottom: 2px solid #ffffff; animation: fadeIn 0.8s ease-out both; animation-delay: 0.1s; letter-spacing: -0.5px; }
+        h2 { font-size: 1.6em; color: #cccccc; font-weight: 500; margin-top: 30px; margin-bottom: 1.5em; border-bottom: 1px solid #555555; padding-bottom: 5px; animation: fadeIn 0.8s ease-out both; animation-delay: 0.3s; }
+        h3 { font-size: 1.2em; color: #bdbdbd; font-weight: 500; margin-top: 1.8em; margin-bottom: 0.8em; padding-bottom: 3px; border-bottom: 1px dotted #444; }
+        h4 { font-size: 1.1em; color: #cacaca; margin-bottom: 0.5em; padding-bottom: 2px; border-bottom: 1px dotted #555; margin-top: 1.5em;} /* Added h4 style */
+
+
+        /* Main Content Area */
+        main { max-width: 800px; margin: 40px auto; background-color: rgba(30, 30, 30, 0.85); padding: 35px 45px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.1); animation: fadeIn 0.8s ease-out both; animation-delay: 0.2s; }
+        /* Paragraph and List styling */
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; list-style: disc; margin-bottom: 1em; }
+        ol { list-style: decimal; }
+        li { margin-bottom: 8px; font-size: inherit; }
+        strong { font-weight: 500; color: #ffffff; }
+        em { font-style: italic; color: #ababab; } /* Style for italic/emphasis */
+        blockquote { margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(40, 40, 40, 0.7); border-left: 4px solid #666; color: #d0d0d0; }
+        blockquote p { margin-bottom: 0.5em; }
+        blockquote h4 { font-size: 1.1em; color: #cacaca; margin-bottom: 0.5em; padding-bottom: 2px; border-bottom: 1px dotted #555; } /* Style for headings inside blockquotes */
+
+
+        /* Formula Container Styling (with horizontal scroll) */
+        .formula-container {
+            margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(45, 45, 45, 0.9);
+            border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-x: auto; overflow-y: hidden; /* Horizontal scroll, no vertical */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            cursor: pointer; color: #e0e0e0; border-left: 4px solid transparent;
+            font-family: 'Roboto Mono', monospace; position: relative; white-space: nowrap;
+        }
+        .formula-container:hover { background-color: rgba(60, 60, 60, 0.95); border-left-color: #a6e3a1; border-color: rgba(166, 227, 161, 0.5); }
+        .formula-container.copied { background-color: rgba(166, 227, 161, 0.2); border-color: #a6e3a1; border-left-color: #a6e3a1; }
+        /* Optional Scrollbar Style */
+        .formula-container::-webkit-scrollbar { height: 8px; }
+        .formula-container::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.5); border-radius: 4px; }
+        .formula-container::-webkit-scrollbar-thumb { background-color: #888; border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        .formula-container::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
+        /* MathJax display style */
+        .formula-container mjx-container[display="true"] { margin: 0.5em 0 !important; text-align: left !important; display: inline-block; vertical-align: middle; }
+
+        /* Footer Styling */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both; animation-delay: 0.7s; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+        /* Font Control Icons CSS */
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: #a6e3a1; }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Application of Residues: Evaluating Improper Real Integrals</h1> <!-- UPDATED H1 -->
+    </header>
+
+    <main>
+        <!-- ==== SECTION: Definitions (78) ==== -->
+        <h2>Section 78: Definitions and Method for Rational Functions</h2>
+
+        <h3>Definitions</h3>
+        <h4>Improper Integral (Type 1)</h4>
+        <ul>
+            <li>Over $[0, \infty)$:</li>
+                <div class="formula-container"
+                    onclick="copyFormulaLatex(this, '\\color{white}{\\int_0^\\infty f(x) dx = \\lim_{R\\to\\infty} \\int_0^R f(x) dx}')"
+                    data-latex="\int_0^\infty f(x) dx = \lim_{R\to\infty} \int_0^R f(x) dx \quad (Eq 1)"
+                    title="Click to copy LaTeX">
+                    $$ \int_0^\infty f(x) dx = \lim_{R\to\infty} \int_0^R f(x) dx \quad (Eq 1) $$
+                </div>
+            <li>Over $(-\infty, \infty)$:</li>
+                 <div class="formula-container"
+                    onclick="copyFormulaLatex(this, '\\color{white}{\\int_{-\\infty}^\\infty f(x) dx = \\lim_{R_1\\to\\infty} \\int_{-R_1}^0 f(x) dx + \\lim_{R_2\\to\\infty} \\int_0^{R_2} f(x) dx}')"
+                    data-latex="\int_{-\infty}^\infty f(x) dx = \lim_{R_1\to\infty} \int_{-R_1}^0 f(x) dx + \lim_{R_2\to\infty} \int_0^{R_2} f(x) dx \quad (Eq 2)"
+                    title="Click to copy LaTeX">
+                    $$ \int_{-\infty}^\infty f(x) dx = \lim_{R_1\to\infty} \int_{-R_1}^0 f(x) dx + \lim_{R_2\to\infty} \int_0^{R_2} f(x) dx \quad (Eq 2) $$
+                </div>
+        </ul>
+        <p>The integral <strong>converges</strong> if the limit(s) exist.</p>
+
+        <h4>Cauchy Principal Value (P.V.)</h4>
+        <p>For the $(-\infty, \infty)$ case, a sometimes useful value is the Cauchy Principal Value, which uses a single, symmetric limit:</p>
+        <div class="formula-container"
+            onclick="copyFormulaLatex(this, '\\color{white}{\\text{P.V.} \\int_{-\\infty}^\\infty f(x) dx = \\lim_{R\\to\\infty} \\int_{-R}^R f(x) dx}')"
+            data-latex="\text{P.V.} \int_{-\infty}^\infty f(x) dx = \lim_{R\to\infty} \int_{-R}^R f(x) dx \quad (Eq 3)"
+            title="Click to copy LaTeX">
+            $$ \text{P.V.} \int_{-\infty}^\infty f(x) dx = \lim_{R\to\infty} \int_{-R}^R f(x) dx \quad (Eq 3) $$
+        </div>
+
+        <h4>Relationship between Convergence and P.V.</h4>
+        <ul>
+            <li>If $\int_{-\infty}^\infty f(x) dx$ converges, then its P.V. exists and equals the convergent value.</li>
+            <li>The P.V. can exist even if the integral does not converge (e.g., $\int_{-\infty}^\infty x dx$).</li>
+            <li><strong>Important Case:</strong> If $f(x)$ is an <strong>even function</strong> ($f(-x) = f(x)$), and the P.V. exists, then the improper integral $\int_{-\infty}^\infty f(x) dx$ converges, and:</li>
+                <div class="formula-container"
+                    onclick="copyFormulaLatex(this, '\\color{white}{\\int_{-\\infty}^\\infty f(x) dx = \\text{P.V.} \\int_{-\\infty}^\\infty f(x) dx}')"
+                    data-latex="\int_{-\infty}^\infty f(x) dx = \text{P.V.} \int_{-\infty}^\infty f(x) dx \quad (Eq 6)"
+                    title="Click to copy LaTeX">
+                    $$ \int_{-\infty}^\infty f(x) dx = \text{P.V.} \int_{-\infty}^\infty f(x) dx \quad (Eq 6) $$
+                </div>
+                <div class="formula-container"
+                    onclick="copyFormulaLatex(this, '\\color{white}{\\int_0^\\infty f(x) dx = \\frac{1}{2} \\text{P.V.} \\int_{-\\infty}^\\infty f(x) dx}')"
+                    data-latex="\int_0^\infty f(x) dx = \frac{1}{2} \text{P.V.} \int_{-\infty}^\infty f(x) dx \quad (Eq 7)"
+                    title="Click to copy LaTeX">
+                    $$ \int_0^\infty f(x) dx = \frac{1}{2} \text{P.V.} \int_{-\infty}^\infty f(x) dx \quad (Eq 7) $$
+                </div>
+        </ul>
+
+        <h3>The Method: Integrating Rational Functions $p(x)/q(x)$</h3>
+        <p>We focus on evaluating $\int_{-\infty}^\infty f(x) dx$ where $f(x) = p(x)/q(x)$ is a rational function with real coefficients, $q(x)$ has no real zeros, and the degree of $q(x)$ is at least 2 more than the degree of $p(x)$.</p>
+        <ol>
+            <li><strong>Complexify:</strong> Consider the complex function $f(z) = p(z)/q(z)$.</li>
+            <li><strong>Identify Singularities:</strong> Find the zeros of $q(z)$. Identify the distinct zeros $z_1, z_2, \dots, z_n$ that lie in the <strong>upper half-plane</strong> (Im$(z) > 0$).</li>
+            <li><strong>Choose Contour:</strong> Integrate $f(z)$ around a closed semi-circular contour (radius $R$) consisting of the real axis segment $[-R, R]$ and the upper semi-circle $C_R$. Choose $R$ large enough to enclose $z_1, \dots, z_n$. (See Fig 93).</li>
+            <li><strong>Apply Residue Theorem:</strong></li>
+                 <div class="formula-container"
+                    onclick="copyFormulaLatex(this, '\\color{white}{\\int_{-R}^R f(x) dx + \\int_{C_R} f(z) dz = 2\\pi i \\cdot \\sum_{k=1}^n \\text{Res}_{z=z_k} f(z)}')"
+                    data-latex="\int_{-R}^R f(x) dx + \int_{C_R} f(z) dz = 2\pi i \cdot \sum_{k=1}^n \text{Res}_{z=z_k} f(z) \quad (\text{Eq derived before 9})"
+                    title="Click to copy LaTeX">
+                    $$ \int_{-R}^R f(x) dx + \int_{C_R} f(z) dz = 2\pi i \cdot \sum_{k=1}^n \text{Res}_{z=z_k} f(z) \quad (\text{Eq derived before 9}) $$
+                </div>
+            <li><strong>Show Integral over $C_R$ is Zero:</strong> Prove that $\lim_{R\to\infty} \int_{C_R} f(z) dz = 0$. (This holds if $\text{deg}(q) \ge \text{deg}(p) + 2$).</li>
+            <li><strong>Take Limit:</strong> Let $R \to \infty$. The equation becomes:</li>
+                <div class="formula-container"
+                    onclick="copyFormulaLatex(this, '\\color{white}{\\text{P.V.} \\int_{-\\infty}^\\infty f(x) dx = 2\\pi i \\cdot \\sum_{k=1}^n \\text{Res}_{z=z_k} f(z)}')"
+                    data-latex="\text{P.V.} \int_{-\infty}^\infty f(x) dx = 2\pi i \cdot \sum_{k=1}^n \text{Res}_{z=z_k} f(z) \quad (Eq 10)"
+                    title="Click to copy LaTeX">
+                    $$ \text{P.V.} \int_{-\infty}^\infty f(x) dx = 2\pi i \cdot \sum_{k=1}^n \text{Res}_{z=z_k} f(z) \quad (Eq 10) $$
+                </div>
+            <li><strong>Final Result:</strong>
+                <ul>
+                    <li>The P.V. is given by Eq 10.</li>
+                    <li>If $f(x)$ is <strong>even</strong>, then:</li>
+                         <div class="formula-container"
+                            onclick="copyFormulaLatex(this, '\\color{white}{\\int_{-\\infty}^\\infty f(x) dx = 2\\pi i \\cdot \\sum_{k=1}^n \\text{Res}_{z=z_k} f(z)}')"
+                            data-latex="\int_{-\infty}^\infty f(x) dx = 2\pi i \cdot \sum_{k=1}^n \text{Res}_{z=z_k} f(z) \quad (Eq 11)"
+                            title="Click to copy LaTeX">
+                            $$ \int_{-\infty}^\infty f(x) dx = 2\pi i \cdot \sum_{k=1}^n \text{Res}_{z=z_k} f(z) \quad (Eq 11) $$
+                        </div>
+                         <div class="formula-container"
+                            onclick="copyFormulaLatex(this, '\\color{white}{\\int_0^\\infty f(x) dx = \\pi i \\cdot \\sum_{k=1}^n \\text{Res}_{z=z_k} f(z)}')"
+                            data-latex="\int_0^\infty f(x) dx = \pi i \cdot \sum_{k=1}^n \text{Res}_{z=z_k} f(z) \quad (Eq 12)"
+                            title="Click to copy LaTeX">
+                            $$ \int_0^\infty f(x) dx = \pi i \cdot \sum_{k=1}^n \text{Res}_{z=z_k} f(z) \quad (Eq 12) $$
+                        </div>
+                </ul>
+             </li>
+        </ol>
+
+        <!-- ==== SECTION: Example (79) ==== -->
+        <h2>Section 79: Example Evaluation</h2>
+        <h3>Example: Evaluating $\int_0^\infty \frac{x^2}{x^6 + 1} dx$</h3>
+
+        <ol>
+            <li><strong>Check Conditions & Complexify:</strong>
+                <ul>
+                    <li>$f(x) = x^2 / (x^6 + 1)$. Rational, real coefficients.</li>
+                    <li>Denominator $x^6+1 \ne 0$ for real $x$.</li>
+                    <li>$\text{deg}(q)=6 \ge \text{deg}(p)=2 + 2 = 4$. Condition met.</li>
+                    <li>$f(-x) = (-x)^2 / ((-x)^6 + 1) = x^2 / (x^6 + 1) = f(x)$, so $f(x)$ is <strong>even</strong>.</li>
+                    <li>We can use Eq 12. Complex function is $f(z) = z^2 / (z^6 + 1)$.</li>
+                </ul>
+            </li>
+            <li><strong>Singularities:</strong> Solve $z^6 = -1 = e^{i(\pi + 2k\pi)}$. Roots are $c_k = e^{i(\pi/6 + k\pi/3)}$ for $k=0, 1, \dots, 5$.
+                <ul>
+                    <li>$c_0 = e^{i\pi/6} = (\sqrt{3}+i)/2$</li>
+                    <li>$c_1 = e^{i3\pi/6} = e^{i\pi/2} = i$</li>
+                    <li>$c_2 = e^{i5\pi/6} = (-\sqrt{3}+i)/2$</li>
+                    <li>$c_3 = e^{i7\pi/6}$ (Lower half)</li>
+                    <li>$c_4 = e^{i9\pi/6} = e^{i3\pi/2} = -i$ (Lower half)</li>
+                    <li>$c_5 = e^{i11\pi/6}$ (Lower half)</li>
+                </ul>
+                 The singularities in the <strong>upper half-plane</strong> are $z_1=c_0, z_2=c_1, z_3=c_2$. (See Fig 94).
+            </li>
+            <li><strong>Contour and Residue Theorem (Conceptual):</strong> Integrate $f(z)$ around the standard semi-circular contour enclosing $c_0, c_1, c_2$. For large $R$:
+                $\int_{-R}^R f(x) dx + \int_{C_R} f(z) dz = 2\pi i \cdot (\text{Res}_{z=c_0} f(z) + \text{Res}_{z=c_1} f(z) + \text{Res}_{z=c_2} f(z))$.
+            </li>
+            <li><strong>Calculate Residues:</strong> Zeros of $z^6+1$ are simple. Use shortcut $\text{Res} = p(z_k)/q'(z_k)$.
+                <ul>
+                    <li>$p(z) = z^2$, $q(z) = z^6+1$, $q'(z) = 6z^5$.</li>
+                    <li>$\text{Res}_{z=c_k} f(z) = c_k^2 / (6c_k^5) = 1 / (6c_k^3)$.</li>
+                    <li>$B_0 = \text{Res}_{z=c_0} f(z) = 1 / (6 c_0^3) = 1 / (6 (e^{i\pi/6})^3) = 1 / (6 e^{i\pi/2}) = 1 / (6i)$.</li>
+                    <li>$B_1 = \text{Res}_{z=c_1} f(z) = 1 / (6 c_1^3) = 1 / (6 i^3) = 1 / (6(-i)) = -1 / (6i)$.</li>
+                    <li>$B_2 = \text{Res}_{z=c_2} f(z) = 1 / (6 c_2^3) = 1 / (6 (e^{i5\pi/6})^3) = 1 / (6 e^{i5\pi/2}) = 1 / (6 e^{i\pi/2}) = 1 / (6i)$.</li>
+                    <li>Sum of residues in upper half-plane: $B_0+B_1+B_2 = 1/(6i) - 1/(6i) + 1/(6i) = 1/(6i)$.</li>
+                </ul>
+            </li>
+             <li><strong>Show Integral over $C_R$ is Zero:</strong>
+                 <ul>
+                     <li>On $C_R$, $|z|=R$. Use triangle inequality: $|z^6+1| \ge ||z^6| - |-1|| = R^6 - 1$ for large R.</li>
+                     <li>$|f(z)| = |z^2 / (z^6+1)| = |z^2| / |z^6+1| \le R^2 / (R^6 - 1) =: M_R$.</li>
+                     <li>Length of $C_R$ is $L = \pi R$.</li>
+                     <li>$|\int_{C_R} f(z) dz| \le M_R \cdot L = \frac{R^2}{R^6 - 1} \cdot \pi R = \frac{\pi R^3}{R^6 - 1}$.</li>
+                     <li>As $R \to \infty$, $\frac{\pi R^3}{R^6 - 1} \to 0$ (since degree of denominator > degree of numerator).</li>
+                     <li>Thus, $\lim_{R\to\infty} \int_{C_R} f(z) dz = 0$.</li>
+                 </ul>
+            </li>
+             <li><strong>Take Limit & Final Result:</strong>
+                <ul>
+                    <li>Letting $R \to \infty$ in the residue theorem equation gives:</li>
+                     <div class="formula-container"
+                        onclick="copyFormulaLatex(this, '\\color{white}{\\text{P.V.} \\int_{-\\infty}^\\infty \\frac{x^2}{x^6+1} dx = 2\\pi i \\cdot (B_0+B_1+B_2) = 2\\pi i \\left( \\frac{1}{6i} \\right) = \\frac{2\\pi}{6} = \\frac{\\pi}{3}}')"
+                        data-latex="\text{P.V.} \int_{-\infty}^\infty \frac{x^2}{x^6+1} dx = 2\pi i \cdot (B_0+B_1+B_2) = 2\pi i \left( \frac{1}{6i} \right) = \frac{2\pi}{6} = \frac{\pi}{3}"
+                        title="Click to copy LaTeX">
+                        $$ \text{P.V.} \int_{-\infty}^\infty \frac{x^2}{x^6+1} dx = 2\pi i \cdot (B_0+B_1+B_2) = 2\pi i \left( \frac{1}{6i} \right) = \frac{2\pi}{6} = \frac{\pi}{3} $$
+                    </div>
+                    <li>Since $f(x)$ is even, the P.V. equals the convergent integral from $-\infty$ to $\infty$.</li>
+                    <li>Using Eq 7 (or Eq 12):</li>
+                     <div class="formula-container"
+                        onclick="copyFormulaLatex(this, '\\color{white}{\\int_0^\\infty \\frac{x^2}{x^6 + 1} dx = \\frac{1}{2} \\left( \\frac{\\pi}{3} \\right) = \\frac{\\pi}{6}}')"
+                        data-latex="\int_0^\infty \frac{x^2}{x^6 + 1} dx = \frac{1}{2} \left( \frac{\pi}{3} \right) = \frac{\pi}{6}"
+                        title="Click to copy LaTeX">
+                        $$ \int_0^\infty \frac{x^2}{x^6 + 1} dx = \frac{1}{2} \left( \frac{\pi}{3} \right) = \frac{\pi}{6} $$
+                    </div>
+                 </ul>
+             </li>
+        </ol>
+        <p>This method provides a systematic way to compute challenging real integrals by leveraging the power of complex analysis and residues.</p>
+
+    </main>
+
+    <footer>
+        <!-- Optional: Add footer text if needed -->
+    </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div> <!-- Initial size display -->
+
+    <script>
+        // --- Formula Copy Function ---
+        function copyFormulaLatex(element, latexStringWithColor) {
+            if (!latexStringWithColor) {
+                console.error('No LaTeX data found passed to copy function.');
+                return;
+            }
+            // Extract the original LaTeX from data-latex attribute for copying
+            const originalLatex = element.getAttribute('data-latex');
+             if (!originalLatex) {
+                 console.error('No original LaTeX data found in data-latex attribute.');
+                 // Fallback to using the colored string if needed, but remove the color command
+                 latexStringWithColor = latexStringWithColor.replace('\\color{white}{', '').slice(0, -1);
+                 navigator.clipboard.writeText(latexStringWithColor).then(() => { /*...*/ }).catch(err => { /*...*/ });
+                 return; // Or handle fallback differently
+             }
+
+            navigator.clipboard.writeText(originalLatex).then(() => {
+                element.classList.add('copied');
+                const originalTitle = element.title;
+                element.title = 'Copied: ' + originalLatex; // Show what was copied
+                setTimeout(() => {
+                    element.classList.remove('copied');
+                    element.title = originalTitle; // Restore original title
+                 }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy LaTeX: ', err);
+                // Optionally provide user feedback about the failure
+                const originalTitle = element.title;
+                element.title = 'Copy failed!';
+                 setTimeout(() => { element.title = originalTitle; }, 1500);
+            });
+        }
+
+        // --- Font Size Control & Hold Functionality ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body; // Target body for transition class
+
+            // Configuration
+            let currentSize = 10; // Initial size set to 10px
+            const minSize = 10;
+            const maxSize = 28; // Adjust max size if needed
+            const step = 1;
+            let displayTimeout = null;
+            let holdTimeout = null;
+            let holdInterval = null;
+            const initialHoldDelay = 400; // ms before repeat starts
+            const repeatInterval = 100;  // ms between repeats while holding
+            const mathJaxDebounceDelay = 350; // ms to wait after last change before re-typesetting
+
+            // --- Debounce Function ---
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => { clearTimeout(timeout); func(...args); };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // --- Debounced MathJax Typesetting ---
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax");
+                    // Target the main content area for re-typesetting if possible
+                    const mainContent = document.querySelector('main');
+                    const targetElement = mainContent || bodyEl; // Fallback to body
+                    MathJax.typesetPromise([targetElement]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            // --- Update Font Size and Display ---
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px';
+                    display.classList.add('visible');
+
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => {
+                        display.classList.remove('visible');
+                        displayTimeout = null;
+                    }, 1500);
+
+                    // Don't queue MathJax immediately, wait for hold to potentially finish
+                    // queueMathJaxTypeset(); // Removed from here
+                    return true; // Indicate size changed
+                }
+                return false; // Indicate size hit limit
+            }
+
+            // --- Stop Holding Action ---
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition'); // Re-enable transition
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                // When holding stops, trigger MathJax update
+                queueMathJaxTypeset();
+            }
+
+            // --- Start Holding Action ---
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); // OPTIONAL: Disable transition during hold
+                updateFontSize(currentSize + direction * step); // Initial action
+                stopHolding(); // Clear previous timers before starting new ones
+
+                holdTimeout = setTimeout(() => {
+                    // After initial delay, start repeating
+                    holdInterval = setInterval(() => {
+                        if (!updateFontSize(currentSize + direction * step)) {
+                            stopHolding(); // Stop if size limit is reached
+                        }
+                    }, repeatInterval);
+                }, initialHoldDelay);
+            }
+
+            // --- Event Listeners ---
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                // Use 'pointerup' and 'pointerleave' for better touch/mouse handling
+                window.addEventListener('pointerup', stopHolding);
+                minusBtn.addEventListener('pointerleave', stopHolding);
+                plusBtn.addEventListener('pointerleave', stopHolding);
+
+                // Set initial state
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+                 // Initial MathJax typeset on load (after ready)
+                 if (window.MathJax) {
+                     MathJax.startup.promise.then(() => {
+                         console.log("Queueing initial MathJax typeset");
+                         queueMathJaxTypeset(); // Use the debounced version even initially
+                     });
+                 }
+            } else {
+                console.error("Font control elements not found!");
+            }
+
+            // --- Horizontal Scroll Redirect for Formula Containers ---
+             const formulaContainers = document.querySelectorAll('.formula-container');
+             formulaContainers.forEach(container => {
+                 container.addEventListener('wheel', function(event) {
+                     // Only act if the container is actually scrollable horizontally
+                     const isScrollableHorizontally = this.scrollWidth > this.clientWidth;
+                     // Only act if there's vertical scroll intent (deltaY) and not horizontal (deltaX)
+                     const isVerticalScroll = event.deltaY !== 0 && event.deltaX === 0;
+
+                     if (isScrollableHorizontally && isVerticalScroll) {
+                         event.preventDefault(); // Prevent the default vertical page scroll
+                         // Adjust scrollLeft based on deltaY. Might need scaling depending on desired sensitivity.
+                         this.scrollLeft += event.deltaY;
+                     }
+                     // If isScrollableHorizontally is false, or if it's already horizontal scroll (event.deltaX != 0),
+                     // the default behavior (vertical page scroll or horizontal container scroll) will occur.
+                 }, { passive: false }); // passive: false is needed to call preventDefault()
+             });
+             console.log("Horizontal scroll override applied to formula containers.");
+
+        });
+    </script>
+
+</body>
+</html>
