@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 11</title> <!-- UPDATED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: { ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); } }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Base Styles --- */
+        :root {
+            --accent-color: #F08080; /* Light Coral */
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --border-color: #555;
+            --header-bg: #2f2f2f;
+            --header-hover-bg: #3f3f3f;
+            --content-bg: #282828;
+            /* Indicator Colors */
+            --indicator-unvisited: transparent;
+            --indicator-answer: #f7dc6f;
+            --indicator-solution: #58d68d;
+            --indicator-visited-closed: var(--indicator-solution);
+            --anim-duration: 0.5s;
+            --anim-easing: cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace; color: var(--text-color); line-height: 1.7;
+            padding: 25px; background-color: var(--bg-color); min-height: 100vh;
+            font-size: var(--base-font-size); transition: font-size 0.2s ease-in-out;
+            padding-bottom: 80px; overflow-x: hidden;
+        }
+        body.no-font-transition { transition: none !important; }
+
+        /* Headings */
+        h1 {
+            font-size: 2.4em; color: var(--accent-color); font-weight: 700; padding-bottom: 12px;
+            margin: 1.5em auto; border-bottom: 3px solid var(--accent-color);
+            animation: fadeIn 0.8s ease-out both 0.1s; letter-spacing: -0.5px; text-align: center; max-width: 800px;
+        }
+
+        /* --- Accordion Styles --- */
+        .accordion { max-width: 900px; margin: 20px auto; }
+        .accordion-item {
+            border: 1px solid var(--border-color); border-radius: 8px;
+            overflow: hidden; margin-bottom: 25px; background-color: var(--content-bg);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .accordion-item:hover { border-color: #777; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4); }
+        .accordion-header {
+            background-color: var(--header-bg); padding: 18px 25px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background-color 0.3s ease, border-bottom-color var(--anim-duration) var(--anim-easing); /* Updated */
+            border-bottom: 1px solid var(--border-color); position: relative; z-index: 2;
+        }
+        .accordion-item[data-state="collapsed"] .accordion-header { border-bottom-color: transparent; }
+        .accordion-header:hover { background-color: var(--header-hover-bg); }
+        .accordion-header h2 { margin: 0; font-size: 1.2em; color: var(--text-color); text-align: left; padding-right: 10px;} /* Added padding */
+
+        /* --- State Indicator --- */
+        .state-indicator {
+            width: 12px; height: 12px; border-radius: 50%;
+            background-color: var(--indicator-unvisited); display: inline-block; margin-left: 15px;
+            flex-shrink: 0; transition: background-color 0.3s ease; border: 1px solid var(--header-bg);
+        }
+        .accordion-item[data-state="state1"] .state-indicator { background-color: var(--indicator-answer); border-color: transparent; }
+        .accordion-item[data-state="state2"] .state-indicator { background-color: var(--indicator-solution); border-color: transparent; }
+        .accordion-item.visited[data-state="collapsed"] .state-indicator { background-color: var(--indicator-visited-closed); border-color: transparent; }
+
+
+        /* Content Area & Animations */
+        .accordion-content {
+            padding: 0 25px; max-height: 0; overflow: hidden;
+            transition: max-height var(--anim-duration) var(--anim-easing),
+                        padding-top var(--anim-duration) var(--anim-easing),
+                        padding-bottom var(--anim-duration) var(--anim-easing);
+            box-sizing: border-box; position: relative; z-index: 1;
+        }
+        .accordion-item:not([data-state="collapsed"]) .accordion-content { padding-top: 20px; }
+        .content-inner {
+            padding-bottom: 25px; opacity: 0; transform: translateY(10px);
+            transition: opacity 0.4s ease-out 0.15s, transform 0.4s ease-out 0.15s;
+        }
+        .accordion-item:not([data-state="collapsed"]) .content-inner { opacity: 1; transform: translateY(0); }
+
+        /* Content Blocks Structure & Styling */
+        .question-block, .final-answer-block, .solution-block {
+            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);
+        }
+        .content-inner > div:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .question-block strong, .final-answer-block strong, .solution-block strong {
+            color: var(--accent-color); display: block; margin-bottom: 8px; font-size: 1.1em;
+        }
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; margin-bottom: 1em; }
+        li { margin-bottom: 8px; font-size: inherit; }
+
+        /* --- UPDATED Styling for MathJax containers --- */
+        mjx-container {
+            margin: 0.2em 0; /* Reduced vertical space around inline math */
+            text-align: left !important; /* Ensure left alignment */
+            /* Removed display: block; */
+            /* Removed overflow settings here */
+             /* Allow MathJax to handle default display (inline-block) */
+        }
+        mjx-container[display="true"] {
+             margin: 1em 0 !important; /* Restore slightly more vertical space for display math */
+             display: block;           /* Explicitly make display math block-level */
+             overflow-x: auto;       /* Apply overflow only to display math */
+             overflow-y: hidden;
+        }
+        /* Optional: Style scrollbar for display math containers */
+        mjx-container[display="true"]::-webkit-scrollbar { height: 6px; }
+        mjx-container[display="true"]::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.3); border-radius: 3px; }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb { background-color: #666; border-radius: 3px; }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb:hover { background-color: #888; }
+
+
+        /* General Utility Styles */
+        .hidden { display: none !important; }
+
+        /* Footer & Font Control */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both 0.7s; }
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: var(--accent-color); }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Tutorial 11</h1> <!-- UPDATED H1 -->
+    </header>
+
+    <div class="accordion">
+        <!-- Question 1 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q1: CR Equations for $f^2(z)$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Show that if $f(z) = u + iv$ satisfies the Cauchy-Riemann equations, then $f^2(z)$ also satisfies the same.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>By setting $f^2(z) = U+iV = (u^2-v^2) + i(2uv)$ and computing the partial derivatives $U_x, U_y, V_x, V_y$, then substituting the CR equations for $u,v$ ($u_x=v_y, u_y=-v_x$), it is verified that $U_x = V_y$ and $U_y = -V_x$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Let $f(z) = u(x,y) + iv(x,y)$. Since $f(z)$ satisfies the Cauchy-Riemann (CR) equations, we have:
+                        $$u_x = v_y \quad (1)$$
+                        $$u_y = -v_x \quad (2)$$
+                        We assume that $u$ and $v$ have continuous first partial derivatives.</p>
+                        <p>Now consider $f^2(z)$. Let $f^2(z) = U(x,y) + iV(x,y)$.
+                        $$f^2(z) = (u+iv)^2 = u^2 + 2iuv + (iv)^2 = (u^2 - v^2) + i(2uv)$$
+                        So, $U = u^2 - v^2$ and $V = 2uv$.</p>
+                        <p>We need to show that $U$ and $V$ satisfy the CR equations, i.e., $U_x = V_y$ and $U_y = -V_x$.<br/>
+                        Compute the partial derivatives:
+                        $$U_x = \frac{\partial}{\partial x}(u^2 - v^2) = 2u u_x - 2v v_x$$
+                        $$U_y = \frac{\partial}{\partial y}(u^2 - v^2) = 2u u_y - 2v v_y$$
+                        $$V_x = \frac{\partial}{\partial x}(2uv) = 2(u_xv + uv_x)$$
+                        $$V_y = \frac{\partial}{\partial y}(2uv) = 2(u_yv + uv_y)$$</p>
+                        <p>Check the first CR equation for $U, V$: $U_x = V_y$.<br/>
+                        Using (1) and (2) in $U_x$:
+                        $$U_x = 2u(v_y) - 2v(-u_y) = 2uv_y + 2vu_y$$
+                        The expression for $V_y$ is:
+                        $$V_y = 2(u_yv + uv_y) = 2u_yv + 2uv_y$$
+                        Comparing, we see $U_x = V_y$.</p>
+                        <p>Check the second CR equation for $U, V$: $U_y = -V_x$.<br/>
+                        Using (1) and (2) in $U_y$:
+                        $$U_y = 2u(-v_x) - 2v(u_x) = -2uv_x - 2vu_x$$
+                        The expression for $-V_x$ is:
+                        $$-V_x = -2(u_xv + uv_x) = -2u_xv - 2uv_x$$
+                        Comparing, we see $U_y = -V_x$.</p>
+                        <p>Since both CR equations ($U_x = V_y$ and $U_y = -V_x$) are satisfied, $f^2(z)$ also satisfies the Cauchy-Riemann equations.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q2: Showing Functions are Nowhere Differentiable</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Use Cauchy-Riemann (CR) equations to show that the following functions are nowhere differentiable.</p>
+                        <p>(a) $f(z) = z - \bar{z}$</p>
+                        <p>(b) $f(z) = e^x e^{-iy}$</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $u_x=0, v_y=2$. Since $u_x \ne v_y$, $f$ is nowhere differentiable.</p>
+                        <p>(b) C-R equations require $e^x \cos y = -e^x \cos y$ and $-e^x \sin y = e^x \sin y$. This implies $\cos y = 0$ and $\sin y = 0$, which is impossible. Thus $f$ is nowhere differentiable.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p><strong>(a) $f(z) = z - \bar{z}$</strong><br/>
+                        Let $z = x + iy$. $f(z) = (x+iy) - (x-iy) = 2iy$.<br/>
+                        $u(x,y) = 0$, $v(x,y) = 2y$.<br/>
+                        $u_x = 0$, $u_y = 0$.<br/>
+                        $v_x = 0$, $v_y = 2$.<br/>
+                        Check CR equations:<br/>
+                        1. $u_x = v_y \implies 0 = 2$ (False).<br/>
+                        2. $u_y = -v_x \implies 0 = -0$ (True).<br/>
+                        Since the first CR equation is never satisfied, $f$ is nowhere differentiable.
+                        </p>
+                        <p><strong>(b) $f(z) = e^x e^{-iy}$</strong><br/>
+                        $f(z) = e^x (\cos(-y) + i\sin(-y)) = e^x (\cos y - i\sin y) = e^x \cos y - i e^x \sin y$.<br/>
+                        $u(x,y) = e^x \cos y$, $v(x,y) = -e^x \sin y$.<br/>
+                        $u_x = e^x \cos y$, $u_y = -e^x \sin y$.<br/>
+                        $v_x = -e^x \sin y$, $v_y = -e^x \cos y$.<br/>
+                        Check CR equations:<br/>
+                        1. $u_x = v_y \implies e^x \cos y = -e^x \cos y \implies 2e^x \cos y = 0 \implies \cos y = 0$.<br/>
+                        2. $u_y = -v_x \implies -e^x \sin y = -(-e^x \sin y) = e^x \sin y \implies 2e^x \sin y = 0 \implies \sin y = 0$.<br/>
+                        We need both $\cos y = 0$ and $\sin y = 0$. Since $\cos^2 y + \sin^2 y = 1$, this is impossible.<br/>
+                        The CR equations are never satisfied, so $f$ is nowhere differentiable.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q3: Where $f'(z)$ Exists</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Determine where $f'(z)$ exists and find its value when</p>
+                        <p>(a) $f(z) = x^2 + iy^2$</p>
+                        <p>(b) $f(z) = z \text{Im}(z)$</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) Differentiable only on the line $y=x$. $f'(x+ix) = 2x$.</p>
+                        <p>(b) Differentiable only at $z=0$. $f'(0) = 0$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p><strong>(a) $f(z) = x^2 + iy^2$</strong><br/>
+                        $u = x^2$, $v = y^2$.<br/>
+                        $u_x = 2x$, $u_y = 0$.<br/>
+                        $v_x = 0$, $v_y = 2y$.<br/>
+                        Partials are continuous everywhere.<br/>
+                        Check CR equations:<br/>
+                        1. $u_x = v_y \implies 2x = 2y \implies x = y$.<br/>
+                        2. $u_y = -v_x \implies 0 = -0$ (True).<br/>
+                        $f'(z)$ exists only when $x=y$.<br/>
+                        Value: $f'(z) = u_x + iv_x = 2x + i(0) = 2x$.<br/>
+                        So, $f'(x+ix) = 2x$.
+                        </p>
+                        <p><strong>(b) $f(z) = z \text{Im}(z)$</strong><br/>
+                        $f(z) = (x+iy)y = xy + iy^2$.<br/>
+                        $u = xy$, $v = y^2$.<br/>
+                        $u_x = y$, $u_y = x$.<br/>
+                        $v_x = 0$, $v_y = 2y$.<br/>
+                        Partials are continuous everywhere.<br/>
+                        Check CR equations:<br/>
+                        1. $u_x = v_y \implies y = 2y \implies y = 0$.<br/>
+                        2. $u_y = -v_x \implies x = -0 \implies x = 0$.<br/>
+                        $f'(z)$ exists only when $x=0$ and $y=0$, i.e., only at $z=0$.<br/>
+                        Value: $f'(0) = u_x(0,0) + iv_x(0,0) = 0 + i(0) = 0$.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 4 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q4: Deriving Polar CR Equations</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Derive the polar form of the Cauchy Riemann equations from the Cartesian form.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>Using $x=r\cos\theta, y=r\sin\theta$ and the chain rule for $u_r, u_\theta, v_r, v_\theta$, substitute the Cartesian CR equations $u_x=v_y, u_y=-v_x$ into the expressions for $v_r, v_\theta$ and compare with $u_r, u_\theta$ to derive $u_r = \frac{1}{r}v_\theta$ and $v_r = -\frac{1}{r}u_\theta$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Cartesian CR equations: $u_x = v_y$ (1), $u_y = -v_x$ (2).<br/>
+                        Coordinate transformation: $x = r\cos\theta$, $y = r\sin\theta$.<br/>
+                        Chain rule:
+                        $$u_r = u_x x_r + u_y y_r = u_x (\cos\theta) + u_y (\sin\theta)$$
+                        $$u_\theta = u_x x_\theta + u_y y_\theta = u_x (-r\sin\theta) + u_y (r\cos\theta)$$
+                        $$v_r = v_x x_r + v_y y_r = v_x (\cos\theta) + v_y (\sin\theta)$$
+                        $$v_\theta = v_x x_\theta + v_y y_\theta = v_x (-r\sin\theta) + v_y (r\cos\theta)$$
+                        Substitute CR equations (1) and (2) into $v_r$ and $v_\theta$:
+                        $$v_r = (-u_y)(\cos\theta) + (u_x)(\sin\theta) = u_x\sin\theta - u_y\cos\theta$$
+                        $$v_\theta = (-u_y)(-r\sin\theta) + (u_x)(r\cos\theta) = r(u_y\sin\theta + u_x\cos\theta)$$
+                        Compare $u_r$ with $v_\theta$:
+                        $$u_r = u_x\cos\theta + u_y\sin\theta$$
+                        $$\frac{1}{r}v_\theta = u_y\sin\theta + u_x\cos\theta$$
+                        Thus, $u_r = \frac{1}{r}v_\theta$.</p>
+                        <p>Compare $v_r$ with $u_\theta$:
+                        $$v_r = u_x\sin\theta - u_y\cos\theta$$
+                        $$u_\theta = -r u_x \sin\theta + r u_y \cos\theta$$
+                        $$-\frac{1}{r}u_\theta = -(-\frac{1}{r} r u_x \sin\theta + \frac{1}{r} r u_y \cos\theta) = u_x\sin\theta - u_y\cos\theta$$
+                        Thus, $v_r = -\frac{1}{r}u_\theta$.</p>
+                        <p>The polar CR equations are: $u_r = \frac{1}{r}v_\theta$, $v_r = -\frac{1}{r}u_\theta$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 5 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q5: $f'(z)$ using Polar CR Equations</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Use polar form of Cauchy-Riemann (CR) equations to find $f'(z)$ where :</p>
+                        <p>(a) $f(z) = \sqrt{r} e^{i\theta/2}, (r > 0, \alpha < \theta < \alpha + 2\pi)$</p>
+                        <p>(b) $f(z) = e^{-\theta}\cos(\ln r) + ie^{-\theta}\sin(\ln r), (r > 0, 0 < \theta < 2\pi)$</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $f'(z) = \frac{1}{2\sqrt{r}}e^{-i\theta/2}$</p>
+                        <p>(b) $f'(z) = \frac{i}{z} f(z) = \frac{i e^{-\theta(1+i)} e^{i\ln r}}{r}$</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p><strong>(a) $f(z) = \sqrt{r} e^{i\theta/2}$</strong><br/>
+                        $u = \sqrt{r}\cos(\theta/2)$, $v = \sqrt{r}\sin(\theta/2)$.<br/>
+                        $u_r = \frac{1}{2\sqrt{r}}\cos(\theta/2)$, $u_\theta = -\frac{\sqrt{r}}{2}\sin(\theta/2)$.<br/>
+                        $v_r = \frac{1}{2\sqrt{r}}\sin(\theta/2)$, $v_\theta = \frac{\sqrt{r}}{2}\cos(\theta/2)$.<br/>
+                        Check CR: $u_r = \frac{1}{r}v_\theta \implies \frac{\cos(\theta/2)}{2\sqrt{r}} = \frac{1}{r}\frac{\sqrt{r}\cos(\theta/2)}{2}$ (True).<br/>
+                        $v_r = -\frac{1}{r}u_\theta \implies \frac{\sin(\theta/2)}{2\sqrt{r}} = -\frac{1}{r}(-\frac{\sqrt{r}\sin(\theta/2)}{2})$ (True).<br/>
+                        Derivative $f'(z) = e^{-i\theta}(u_r + iv_r)$:
+                        $$ f'(z) = e^{-i\theta} \left( \frac{\cos(\theta/2)}{2\sqrt{r}} + i \frac{\sin(\theta/2)}{2\sqrt{r}} \right) $$
+                        $$ f'(z) = \frac{e^{-i\theta}}{2\sqrt{r}} (\cos(\theta/2) + i\sin(\theta/2)) = \frac{e^{-i\theta}}{2\sqrt{r}} e^{i\theta/2} $$
+                        $$ f'(z) = \frac{1}{2\sqrt{r}} e^{-i\theta/2} $$
+                        </p>
+                        <p><strong>(b) $f(z) = e^{-\theta}\cos(\ln r) + ie^{-\theta}\sin(\ln r)$</strong><br/>
+                        $f(z) = e^{-\theta}e^{i\ln r}$.<br/>
+                        $u = e^{-\theta}\cos(\ln r)$, $v = e^{-\theta}\sin(\ln r)$.<br/>
+                        $u_r = -\frac{e^{-\theta}}{r}\sin(\ln r)$, $u_\theta = -e^{-\theta}\cos(\ln r)$.<br/>
+                        $v_r = \frac{e^{-\theta}}{r}\cos(\ln r)$, $v_\theta = -e^{-\theta}\sin(\ln r)$.<br/>
+                        Check CR: $u_r = \frac{1}{r}v_\theta \implies -\frac{e^{-\theta}\sin(\ln r)}{r} = \frac{1}{r}(-e^{-\theta}\sin(\ln r))$ (True).<br/>
+                        $v_r = -\frac{1}{r}u_\theta \implies \frac{e^{-\theta}\cos(\ln r)}{r} = -\frac{1}{r}(-e^{-\theta}\cos(\ln r))$ (True).<br/>
+                        Derivative $f'(z) = e^{-i\theta}(u_r + iv_r)$:
+                        $$ f'(z) = e^{-i\theta} \left( -\frac{e^{-\theta}}{r}\sin(\ln r) + i \frac{e^{-\theta}}{r}\cos(\ln r) \right) $$
+                        $$ f'(z) = \frac{e^{-i\theta}e^{-\theta}}{r} (-\sin(\ln r) + i\cos(\ln r)) $$
+                        $$ f'(z) = \frac{e^{-\theta(1+i)}}{r} [i(\cos(\ln r) + i\sin(\ln r))] $$
+                        $$ f'(z) = \frac{i e^{-\theta(1+i)}}{r} e^{i\ln r} $$
+                        (Alternatively, note $f(z)=e^{i\ln z}$, so $f'(z) = e^{i\ln z} \cdot \frac{i}{z} = f(z)\frac{i}{z}$.)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 6 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q6: Differentiability Set for $2x^2+y+i(y^2-x)$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find the set of points at which the given function is differentiable :<br/> $f(z) = 2x^2 + y + i(y^2 - x)$</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>The function is differentiable only on the line $y=2x$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>$u = 2x^2 + y$, $v = y^2 - x$.<br/>
+                        $u_x = 4x$, $u_y = 1$.<br/>
+                        $v_x = -1$, $v_y = 2y$.<br/>
+                        Partials are continuous everywhere.<br/>
+                        Check CR equations:<br/>
+                        1. $u_x = v_y \implies 4x = 2y \implies y = 2x$.<br/>
+                        2. $u_y = -v_x \implies 1 = -(-1) \implies 1 = 1$ (True).<br/>
+                        Both CR equations hold if and only if $y=2x$.<br/>
+                        The set of points where $f$ is differentiable is $\{z = x+iy \mid y = 2x\}$.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 7 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q7: Finding Constants for Analyticity</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find real constants a and b so that the given function is differentiable everywhere:<br/> $f(z) = 3x - y + 5 + i(ax + by - 3)$</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>$a=1$, $b=3$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>$u = 3x - y + 5$, $v = ax + by - 3$.<br/>
+                        $u_x = 3$, $u_y = -1$.<br/>
+                        $v_x = a$, $v_y = b$.<br/>
+                        Partials are constants, hence continuous everywhere.<br/>
+                        For $f$ to be differentiable everywhere, CR equations must hold everywhere:<br/>
+                        1. $u_x = v_y \implies 3 = b$.<br/>
+                        2. $u_y = -v_x \implies -1 = -a \implies a = 1$.<br/>
+                        Thus, we need $a=1$ and $b=3$.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 8 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q8: CR Equations vs Differentiability</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Show that the function $f(z) = \sqrt{|\bar{z}^2 - z^2|}$ satisfies the CR equations at the origin, but is not differentiable. Explain.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>$f(z) = 2\sqrt{|x||y|}$. The partial derivatives $u_x, u_y, v_x, v_y$ are all 0 at (0,0), satisfying CR equations. However, the limit $\lim_{\Delta z \to 0} f(\Delta z)/\Delta z$ depends on the path, showing non-differentiability. This occurs because the partial derivatives are not continuous at (0,0), which is required for the CR equations to be sufficient for differentiability.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>First, $f(z) = \sqrt{|(x-iy)^2 - (x+iy)^2|} = \sqrt{|-4ixy|} = 2\sqrt{|x||y|}$.<br/>
+                        $u(x,y) = 2\sqrt{|x||y|}$, $v(x,y) = 0$.</p>
+                        <p>Check CR at origin (0,0):<br/>
+                        $u_x(0,0) = \lim_{h\to 0} \frac{u(h,0)-u(0,0)}{h} = \lim_{h\to 0} \frac{0-0}{h} = 0$.<br/>
+                        $u_y(0,0) = \lim_{k\to 0} \frac{u(0,k)-u(0,0)}{k} = \lim_{k\to 0} \frac{0-0}{k} = 0$.<br/>
+                        $v_x(0,0) = 0$, $v_y(0,0) = 0$.<br/>
+                        CR equations: $u_x=v_y \implies 0=0$ (True), $u_y=-v_x \implies 0=-0$ (True).<br/>
+                        The CR equations are satisfied at the origin.</p>
+                        <p>Check differentiability at origin:<br/>
+                        $f'(0) = \lim_{\Delta z \to 0} \frac{f(\Delta z) - f(0)}{\Delta z} = \lim_{\Delta z \to 0} \frac{2\sqrt{|\Delta x||\Delta y|}}{\Delta x + i\Delta y}$<br/>
+                        Approach along $\Delta y = m \Delta x$ ($\Delta z = \Delta x(1+im)$):
+                        $$ \lim_{\Delta x \to 0} \frac{2\sqrt{|\Delta x||m\Delta x|}}{\Delta x(1+im)} = \lim_{\Delta x \to 0} \frac{2\sqrt{|m|}|\Delta x|}{\Delta x(1+im)} $$
+                        This limit is $\frac{\pm 2\sqrt{|m|}}{1+im}$ depending on the sign of $\Delta x$. Since the limit depends on $m$ and the direction, the limit does not exist uniquely.<br/>
+                        Thus, $f(z)$ is not differentiable at the origin.</p>
+                        <p><strong>Explanation:</strong> The Cauchy-Riemann equations being satisfied at a point is a necessary condition for differentiability, but not sufficient. Sufficiency requires the partial derivatives ($u_x, u_y, v_x, v_y$) to also be continuous at the point. Here, while $u_x(0,0)=0$, $u_x(x,y) = \sqrt{|y/x|} \cdot \text{sgn}(x)$ (for $x\ne 0$) which is not continuous at (0,0). The lack of continuity of partial derivatives allows the CR equations to hold while the function is still non-differentiable.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+         <!-- Question 9 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q9: $\partial / \partial \bar{z}$ Operator and CR Equations</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Define the operator $\frac{\partial}{\partial \bar{z}} = \frac{1}{2}(\frac{\partial}{\partial x} + i \frac{\partial}{\partial y})$. Show that a function $f$ satisfies CR equations if and only if $\frac{\partial f}{\partial \bar{z}} = 0$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>Applying the operator $\frac{\partial}{\partial \bar{z}}$ to $f=u+iv$ gives $\frac{1}{2}((u_x-v_y) + i(v_x+u_y))$. This expression is zero if and only if $u_x-v_y=0$ and $v_x+u_y=0$, which are the CR equations.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Let $f(z) = u(x,y) + iv(x,y)$. Apply the operator:
+                        $$ \frac{\partial f}{\partial \bar{z}} = \frac{1}{2} \left( \frac{\partial (u+iv)}{\partial x} + i \frac{\partial (u+iv)}{\partial y} \right) $$
+                        $$ \frac{\partial f}{\partial \bar{z}} = \frac{1}{2} \left( (u_x + iv_x) + i (u_y + iv_y) \right) $$
+                        $$ \frac{\partial f}{\partial \bar{z}} = \frac{1}{2} (u_x + iv_x + iu_y + i^2 v_y) $$
+                        $$ \frac{\partial f}{\partial \bar{z}} = \frac{1}{2} (u_x - v_y + i(v_x + u_y)) \quad (*) $$
+                        ($\Rightarrow$) Assume $f$ satisfies CR equations: $u_x = v_y$ and $u_y = -v_x$. Substitute into (*):
+                        $$ \frac{\partial f}{\partial \bar{z}} = \frac{1}{2} ( (v_y - v_y) + i(v_x + (-v_x)) ) = \frac{1}{2}(0 + i0) = 0 $$
+                        ($\Leftarrow$) Assume $\frac{\partial f}{\partial \bar{z}} = 0$. From (*), this means:
+                        $$ \frac{1}{2} (u_x - v_y) = 0 \implies u_x = v_y $$
+                        $$ \frac{1}{2} (v_x + u_y) = 0 \implies u_y = -v_x $$
+                        These are the CR equations.
+                        Therefore, $f$ satisfies CR equations if and only if $\frac{\partial f}{\partial \bar{z}} = 0$.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div> <!-- End Accordion Container -->
+
+
+    <footer> <!-- Optional Footer --> </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div>
+
+    <script>
+        // --- Debounce Function ---
+        function debounce(func, wait) { let timeout; return function(...args) { const later = () => { clearTimeout(timeout); func.apply(this, args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body;
+
+            // --- Font Size Control & Hold ---
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            let currentSize = 10; const minSize = 10; const maxSize = 28; const step = 1;
+            let displayTimeout = null; let holdTimeout = null; let holdInterval = null;
+            const initialHoldDelay = 400; const repeatInterval = 100;
+            const mathJaxDebounceDelay = 350;
+
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax for body");
+                    MathJax.typesetPromise([bodyEl]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            const handleFontResizeEnd = debounce(() => {
+                console.log("Font resize finished.");
+                queueMathJaxTypeset();
+            }, mathJaxDebounceDelay);
+
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px'; display.classList.add('visible');
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => { display.classList.remove('visible'); displayTimeout = null; }, 1500);
+                    handleFontResizeEnd(); return true;
+                } return false;
+            }
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition');
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                handleFontResizeEnd();
+            }
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); updateFontSize(currentSize + direction * step);
+                if (holdTimeout) clearTimeout(holdTimeout); if (holdInterval) clearInterval(holdInterval);
+                holdTimeout = setTimeout(() => { holdInterval = setInterval(() => { if (!updateFontSize(currentSize + direction * step)) { stopHolding(); } }, repeatInterval); }, initialHoldDelay);
+            }
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                window.addEventListener('mouseup', stopHolding);
+                minusBtn.addEventListener('mouseleave', stopHolding); plusBtn.addEventListener('mouseleave', stopHolding);
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px'); display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+            } else { console.error("Font control elements not found!"); }
+
+
+            // --- Accordion Logic (with State Indicator & MathJax Trigger - Robust Measurement) ---
+            const accordionItems = document.querySelectorAll('.accordion-item');
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                const content = item.querySelector('.accordion-content');
+                const innerContent = content.querySelector('.content-inner');
+                const finalAnswerBlock = innerContent.querySelector('.final-answer-block');
+                const solutionBlock = innerContent.querySelector('.solution-block');
+
+
+                header.addEventListener('click', () => {
+                    const currentState = item.getAttribute('data-state');
+                    let nextState;
+
+                    if (currentState === 'collapsed') {
+                        if (!item.classList.contains('visited')) { item.classList.add('visited'); }
+                        nextState = 'state1';
+                    } else if (currentState === 'state1') {
+                        nextState = 'state2';
+                    } else { // state2
+                        nextState = 'collapsed';
+                    }
+
+                    item.setAttribute('data-state', nextState);
+                    console.log(`Item state changed to: ${nextState}`);
+
+                    const isCollapsed = nextState === 'collapsed';
+                    const showAnswer = nextState === 'state1';
+                    const showSolution = nextState === 'state2';
+
+                    // Toggle visibility of answer/solution blocks
+                    if (finalAnswerBlock) finalAnswerBlock.classList.toggle('hidden', !(showAnswer || showSolution)); // Show answer if state 1 or 2
+                    if (solutionBlock) solutionBlock.classList.toggle('hidden', !showSolution); // Show solution only if state 2
+
+
+                    // --- Expansion/Collapse Logic ---
+                    if (!isCollapsed) {
+                        // --- EXPANDING ---
+                        let mathJaxPromise = Promise.resolve();
+                        if (window.MathJax && MathJax.typesetPromise) {
+                            // Determine the specific block that just became visible or needs typesetting
+                             let elementToTypeset = null;
+                             if (nextState === 'state1' && finalAnswerBlock && !finalAnswerBlock.dataset.mathjaxTypeset) {
+                                 elementToTypeset = finalAnswerBlock;
+                             } else if (nextState === 'state2' && solutionBlock && !solutionBlock.dataset.mathjaxTypeset) {
+                                 elementToTypeset = solutionBlock;
+                                 // Also ensure answer block is typeset if it wasn't already
+                                 if (finalAnswerBlock && !finalAnswerBlock.dataset.mathjaxTypeset) {
+                                     MathJax.typesetPromise([finalAnswerBlock]).then(() => {
+                                         finalAnswerBlock.dataset.mathjaxTypeset = 'true';
+                                     }).catch(err => console.error('MathJax typesetting error for answer block on state 2:', err));
+                                 }
+                             }
+
+                            if(elementToTypeset) {
+                                console.log(`Queueing MathJax for newly visible block in: ${header.querySelector('h2').textContent.trim()}`);
+                                mathJaxPromise = MathJax.typesetPromise([elementToTypeset]).then(() => {
+                                    elementToTypeset.dataset.mathjaxTypeset = 'true'; // Mark as typeset
+                                }).catch(err => {
+                                    console.error('MathJax typesetting error during expand:', err);
+                                });
+                            } else {
+                                console.log("Content already typeset or no specific block to typeset.");
+                            }
+                        } else { console.warn("MathJax not available for typesetting during expand."); }
+
+                         mathJaxPromise.then(() => {
+                            // Recalculate height *after* MathJax (if it ran) and content visibility is updated
+                             requestAnimationFrame(() => {
+                                 requestAnimationFrame(() => { // Double rAF
+                                    content.style.maxHeight = 'none'; // Remove previous limit to measure full height
+                                    const currentHeight = content.scrollHeight; // Measure height including padding
+                                    console.log(`Measured scrollHeight after MathJax & rAF: ${currentHeight}px`);
+
+                                    if (currentHeight <= 0 && !isCollapsed) {
+                                         console.warn("Scroll height is zero! Check content visibility/rendering.");
+                                     }
+                                     content.style.maxHeight = '0px'; // Set to 0 to start transition from collapsed state
+                                     requestAnimationFrame(() => { // Apply final height in next frame
+                                         content.style.maxHeight = currentHeight + 'px';
+                                         console.log(`Applied maxHeight: ${currentHeight}px`);
+                                     });
+                                 });
+                             });
+                         });
+
+                    } else {
+                        // --- COLLAPSING ---
+                        if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                           content.style.maxHeight = '0px';
+                           console.log("Collapsing: Set maxHeight to 0px");
+                           // Optional: Reset MathJax typesetting status if desired on collapse
+                           // if (finalAnswerBlock) delete finalAnswerBlock.dataset.mathjaxTypeset;
+                           // if (solutionBlock) delete solutionBlock.dataset.mathjaxTypeset;
+                        }
+                    }
+                });
+            });
+            console.log("Accordion logic (Robust Measurement) with state indicators and MathJax applied.");
+
+
+            // --- Initial MathJax Typeset on Load ---
+             if (window.MathJax) {
+                 MathJax.startup.promise.then(() => {
+                     console.log("Queueing initial MathJax typeset after load");
+                     const questionBlocks = document.querySelectorAll('.question-block'); // Only typeset questions initially
+                     MathJax.typesetPromise(Array.from(questionBlocks)).catch((err) => console.error('MathJax initial typesetting error:', err));
+                 });
+             }
+
+        }); // End DOMContentLoaded
+    </script>
+
+</body>
+</html>

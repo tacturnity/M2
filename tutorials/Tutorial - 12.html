@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 12</title> <!-- UPDATED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: { ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); } }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Base Styles --- */
+        :root {
+            --accent-color: #F08080; /* Light Coral */
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --border-color: #555;
+            --header-bg: #2f2f2f;
+            --header-hover-bg: #3f3f3f;
+            --content-bg: #282828;
+            /* Indicator Colors */
+            --indicator-unvisited: transparent;
+            --indicator-answer: #f7dc6f;
+            --indicator-solution: #58d68d;
+            --indicator-visited-closed: var(--indicator-solution);
+            --anim-duration: 0.5s;
+            --anim-easing: cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace; color: var(--text-color); line-height: 1.7;
+            padding: 25px; background-color: var(--bg-color); min-height: 100vh;
+            font-size: var(--base-font-size); transition: font-size 0.2s ease-in-out;
+            padding-bottom: 80px; overflow-x: hidden;
+        }
+        body.no-font-transition { transition: none !important; }
+
+        /* Headings */
+        h1 {
+            font-size: 2.4em; color: var(--accent-color); font-weight: 700; padding-bottom: 12px;
+            margin: 1.5em auto; border-bottom: 3px solid var(--accent-color);
+            animation: fadeIn 0.8s ease-out both 0.1s; letter-spacing: -0.5px; text-align: center; max-width: 800px;
+        }
+
+        /* --- Accordion Styles --- */
+        .accordion { max-width: 900px; margin: 20px auto; }
+        .accordion-item {
+            border: 1px solid var(--border-color); border-radius: 8px;
+            overflow: hidden; margin-bottom: 25px; background-color: var(--content-bg);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .accordion-item:hover { border-color: #777; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4); }
+        .accordion-header {
+            background-color: var(--header-bg); padding: 18px 25px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background-color 0.3s ease, border-bottom-color var(--anim-duration) var(--anim-easing); /* Updated */
+            border-bottom: 1px solid var(--border-color); position: relative; z-index: 2;
+        }
+        .accordion-item[data-state="collapsed"] .accordion-header { border-bottom-color: transparent; }
+        .accordion-header:hover { background-color: var(--header-hover-bg); }
+        .accordion-header h2 { margin: 0; font-size: 1.2em; color: var(--text-color); text-align: left; padding-right: 10px;} /* Added padding */
+
+        /* --- State Indicator --- */
+        .state-indicator {
+            width: 12px; height: 12px; border-radius: 50%;
+            background-color: var(--indicator-unvisited); display: inline-block; margin-left: 15px;
+            flex-shrink: 0; transition: background-color 0.3s ease; border: 1px solid var(--header-bg);
+        }
+        .accordion-item[data-state="state1"] .state-indicator { background-color: var(--indicator-answer); border-color: transparent; }
+        .accordion-item[data-state="state2"] .state-indicator { background-color: var(--indicator-solution); border-color: transparent; }
+        .accordion-item.visited[data-state="collapsed"] .state-indicator { background-color: var(--indicator-visited-closed); border-color: transparent; }
+
+
+        /* Content Area & Animations */
+        .accordion-content {
+            padding: 0 25px; max-height: 0; overflow: hidden;
+            transition: max-height var(--anim-duration) var(--anim-easing),
+                        padding-top var(--anim-duration) var(--anim-easing),
+                        padding-bottom var(--anim-duration) var(--anim-easing);
+            box-sizing: border-box; position: relative; z-index: 1;
+        }
+        .accordion-item:not([data-state="collapsed"]) .accordion-content { padding-top: 20px; }
+        .content-inner {
+            padding-bottom: 25px; opacity: 0; transform: translateY(10px);
+            transition: opacity 0.4s ease-out 0.15s, transform 0.4s ease-out 0.15s;
+        }
+        .accordion-item:not([data-state="collapsed"]) .content-inner { opacity: 1; transform: translateY(0); }
+
+        /* Content Blocks Structure & Styling */
+        .question-block, .final-answer-block, .solution-block {
+            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);
+        }
+        .content-inner > div:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .question-block strong, .final-answer-block strong, .solution-block strong {
+            color: var(--accent-color); display: block; margin-bottom: 8px; font-size: 1.1em;
+        }
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; margin-bottom: 1em; }
+        li { margin-bottom: 8px; font-size: inherit; }
+
+        /* --- UPDATED Styling for MathJax containers --- */
+        mjx-container {
+            margin: 0.2em 0; /* Reduced vertical space around inline math */
+            text-align: left !important; /* Ensure left alignment */
+            /* Removed display: block; */
+            /* Removed overflow settings here */
+             /* Allow MathJax to handle default display (inline-block) */
+        }
+        mjx-container[display="true"] {
+             margin: 1em 0 !important; /* Restore slightly more vertical space for display math */
+             display: block;           /* Explicitly make display math block-level */
+             overflow-x: auto;       /* Apply overflow only to display math */
+             overflow-y: hidden;
+        }
+        /* Optional: Style scrollbar for display math containers */
+        mjx-container[display="true"]::-webkit-scrollbar { height: 6px; }
+        mjx-container[display="true"]::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.3); border-radius: 3px; }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb { background-color: #666; border-radius: 3px; }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb:hover { background-color: #888; }
+
+
+        /* General Utility Styles */
+        .hidden { display: none !important; }
+
+        /* Footer & Font Control */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both 0.7s; }
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: var(--accent-color); }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Tutorial 12</h1> <!-- UPDATED H1 -->
+    </header>
+
+    <div class="accordion">
+        <!-- Question 1 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q1: Constant Real Part Implies Constant Function</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>If $f$ is an analytic function and Re $f$ is constant in a domain $D$, then show that $f$ is constant in $D$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>If $u = \text{Re } f$ is constant, then $u_x=0$ and $u_y=0$. By CR equations ($u_x=v_y, u_y=-v_x$), we get $v_y=0$ and $v_x=0$. Since both partial derivatives of $v$ are zero in the domain $D$, $v$ must also be constant. Thus $f=u+iv$ is constant.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Let $f(z) = u(x,y) + iv(x,y)$, where $z = x+iy$.<br/>
+                        Given that $f(z)$ is analytic in a domain $D$. This means the Cauchy-Riemann (CR) equations hold in $D$:
+                        $$u_x = v_y \quad (1)$$
+                        $$u_y = -v_x \quad (2)$$
+                        We are also given that Re $f = u(x,y)$ is constant in $D$. Let $u(x,y) = c$ for some real constant $c$.</p>
+                        <p>Since $u(x,y) = c$, its partial derivatives are zero:
+                        $$u_x = 0$$
+                        $$u_y = 0$$
+                        Using the CR equations:
+                        From (1), $v_y = u_x = 0$.<br/>
+                        From (2), $-v_x = u_y = 0$, which implies $v_x = 0$.</p>
+                        <p>Since both $v_x = 0$ and $v_y = 0$ throughout the connected domain $D$, the function $v(x,y)$ must be constant in $D$. Let $v(x,y) = k$ for some real constant $k$.</p>
+                        <p>Therefore, $f(z) = u(x,y) + iv(x,y) = c + ik$.<br/>
+                        This shows that $f(z)$ is a constant complex number throughout the domain $D$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q2: Analyticity of $\overline{f(\bar{z})}$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>If $f(z)$ is analytic in an open set $\Omega$ then show that $g(z)=\overline{f(\bar{z})}$ is also analytic in $\Omega$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>Let $f=u+iv$ and $g=U+iV$. Then $U(x,y)=u(x,-y)$ and $V(x,y)=-v(x,-y)$. By using the chain rule and the CR equations for $f$, it is shown that $U_x=V_y$ and $U_y=-V_x$, proving $g$ is analytic.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Let $f(z) = u(x,y) + iv(x,y)$. Since $f$ is analytic in $\Omega$, $u$ and $v$ have continuous first partial derivatives satisfying the Cauchy-Riemann (CR) equations:
+                        $$u_x = v_y \quad (1)$$
+                        $$u_y = -v_x \quad (2)$$
+                        Let $g(z) = \overline{f(\bar{z})}$. Let $z = x+iy$, so $\bar{z} = x-iy$.<br/>
+                        $f(\bar{z}) = u(x, -y) + iv(x, -y)$.<br/>
+                        $g(z) = \overline{f(\bar{z})} = u(x, -y) - iv(x, -y)$.</p>
+                        <p>Let $g(z) = U(x,y) + iV(x,y)$. Then:
+                        $U(x,y) = u(x, -y)$<br/>
+                        $V(x,y) = -v(x, -y)$</p>
+                        <p>Calculate partial derivatives using the chain rule:
+                        $$U_x = \frac{\partial}{\partial x}u(x,-y) = u_x(x,-y)$$
+                        $$U_y = \frac{\partial}{\partial y}u(x,-y) = u_y(x,-y) \cdot (-1) = -u_y(x,-y)$$
+                        $$V_x = \frac{\partial}{\partial x}[-v(x,-y)] = -v_x(x,-y)$$
+                        $$V_y = \frac{\partial}{\partial y}[-v(x,-y)] = -[v_y(x,-y) \cdot (-1)] = v_y(x,-y)$$</p>
+                        <p>Check CR equations for $g(z)$: $U_x = V_y$ and $U_y = -V_x$.<br/>
+                        Check 1: $U_x = V_y$? <br/>
+                        $U_x(x,y) = u_x(x,-y)$. $V_y(x,y) = v_y(x,-y)$. Since $f$ satisfies CR eq (1) at $(x,-y)$, we have $u_x(x,-y) = v_y(x,-y)$. Thus $U_x = V_y$ holds.</p>
+                        <p>Check 2: $U_y = -V_x$? <br/>
+                        $U_y(x,y) = -u_y(x,-y)$. $-V_x(x,y) = -[-v_x(x,-y)] = v_x(x,-y)$. We need to check if $-u_y(x,-y) = v_x(x,-y)$. Since $f$ satisfies CR eq (2) at $(x,-y)$, we have $u_y(x,-y) = -v_x(x,-y)$. Multiplying by -1 gives $-u_y(x,-y) = v_x(x,-y)$. Thus $U_y = -V_x$ holds.</p>
+                        <p>Since the partial derivatives of $U$ and $V$ are continuous (because those of $u, v$ are) and satisfy the CR equations, $g(z) = \overline{f(\bar{z})}$ is analytic in $\Omega$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q3: Harmonic Function and Conjugates</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Let $u(x, y) = x^5 - 10x^3y^2 + 5xy^4$. Show that it is harmonic in $\mathbb{R}^2$ and find all its harmonic conjugates.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>$u_{xx} = 20x^3 - 60xy^2$, $u_{yy} = -20x^3 + 60xy^2$. $u_{xx}+u_{yy}=0$, so $u$ is harmonic.
+                        The harmonic conjugates are $v(x,y) = 5x^4y - 10x^2y^3 + y^5 + C$, where C is a real constant.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Given $u(x, y) = x^5 - 10x^3y^2 + 5xy^4$.<br/>
+                        $u_x = 5x^4 - 30x^2y^2 + 5y^4$.<br/>
+                        $u_{xx} = 20x^3 - 60xy^2$.<br/>
+                        $u_y = -20x^3y + 20xy^3$.<br/>
+                        $u_{yy} = -20x^3 + 60xy^2$.<br/>
+                        $u_{xx} + u_{yy} = (20x^3 - 60xy^2) + (-20x^3 + 60xy^2) = 0$. Since partials are continuous, $u$ is harmonic.</p>
+                        <p>Find harmonic conjugate $v(x,y)$. Use CR equations:<br/>
+                        $v_y = u_x = 5x^4 - 30x^2y^2 + 5y^4 \quad (1)$<br/>
+                        $v_x = -u_y = -(-20x^3y + 20xy^3) = 20x^3y - 20xy^3 \quad (2)$</p>
+                        <p>Integrate (1) with respect to $y$:
+                        $$ v(x,y) = \int (5x^4 - 30x^2y^2 + 5y^4) dy = 5x^4y - 10x^2y^3 + y^5 + h(x) $$
+                        Differentiate with respect to $x$:
+                        $$ v_x = 20x^3y - 20xy^3 + h'(x) $$
+                        Compare with (2): $20x^3y - 20xy^3 + h'(x) = 20x^3y - 20xy^3$.<br/>
+                        This implies $h'(x) = 0$, so $h(x) = C$ (a real constant).</p>
+                        <p>The harmonic conjugates are $v(x,y) = 5x^4y - 10x^2y^3 + y^5 + C$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 4 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q4: Harmonic Conjugate of $x^2 - y^2 + x$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find harmonic conjugates of $u(x, y) = x^2 - y^2 + x, \quad x, y \in \mathbb{R}$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>$v(x,y) = 2xy + y + C$, where C is a real constant.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Given $u(x,y) = x^2 - y^2 + x$.<br/>
+                        Check harmonic: $u_x = 2x+1$, $u_{xx} = 2$. $u_y = -2y$, $u_{yy} = -2$. $u_{xx}+u_{yy} = 2-2=0$. Yes, $u$ is harmonic.</p>
+                        <p>Find harmonic conjugate $v$ using CR equations:<br/>
+                        $v_y = u_x = 2x + 1 \quad (1)$<br/>
+                        $v_x = -u_y = -(-2y) = 2y \quad (2)$</p>
+                        <p>Integrate (1) with respect to $y$:
+                        $$ v(x,y) = \int (2x + 1) dy = 2xy + y + h(x) $$
+                        Differentiate with respect to $x$:
+                        $$ v_x = 2y + h'(x) $$
+                        Compare with (2): $2y + h'(x) = 2y \implies h'(x) = 0 \implies h(x) = C$.</p>
+                        <p>The harmonic conjugates are $v(x,y) = 2xy + y + C$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 5 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q5: Harmonicity of $uv$ and $u^2-v^2$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>If $v$ is a harmonic conjugate of $u$, prove that the functions $uv$ and $u^2 - v^2$ are also harmonic.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>If $v$ is a harmonic conjugate of $u$, then $f=u+iv$ is analytic. Therefore $f^2 = (u^2-v^2)+i(2uv)$ is also analytic. The real ($u^2-v^2$) and imaginary ($2uv$) parts of an analytic function are always harmonic. Since $2uv$ is harmonic, $uv$ (a constant multiple) is also harmonic.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>If $v$ is a harmonic conjugate of $u$ in a domain $D$, then the function $f(z) = u(x,y) + iv(x,y)$ is analytic in $D$.</p>
+                        <p>Consider the function $f^2(z)$. Since the product of analytic functions is analytic, $f^2(z)$ is analytic in $D$. Let $f^2(z) = F(z) = U(x,y) + iV(x,y)$.
+                        $$F(z) = (u + iv)^2 = (u^2 - v^2) + i(2uv)$$
+                        So, $U(x,y) = u^2 - v^2$ and $V(x,y) = 2uv$.</p>
+                        <p>A key property of analytic functions is that their real and imaginary parts are harmonic functions. Since $F(z) = U + iV$ is analytic in $D$, its real part $U = u^2 - v^2$ must be harmonic, and its imaginary part $V = 2uv$ must be harmonic.</p>
+                        <p>We are asked to show $uv$ is harmonic. Since we know $V=2uv$ is harmonic, it satisfies $\nabla^2 V = 0$.
+                        Using the linearity of the Laplacian operator:
+                        $$\nabla^2(uv) = \nabla^2(\frac{1}{2}V) = \frac{1}{2} \nabla^2 V = \frac{1}{2}(0) = 0$$
+                        Thus, $uv$ is also harmonic.</p>
+                        <p>Therefore, both $u^2 - v^2$ and $uv$ are harmonic functions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 6 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q6: Linear Combination of Harmonic Functions</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Show that a linear combination of Harmonic functions is always harmonic.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>Let $U = \sum c_k u_k$, where $u_k$ are harmonic ($\nabla^2 u_k = 0$) and $c_k$ are constants. By linearity of the Laplacian, $\nabla^2 U = \nabla^2(\sum c_k u_k) = \sum c_k (\nabla^2 u_k) = \sum c_k (0) = 0$. Thus $U$ is harmonic.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Let $u_1, u_2, \dots, u_n$ be harmonic functions in a domain $D$, meaning $\nabla^2 u_k = u_{k,xx} + u_{k,yy} = 0$ for $k=1, \dots, n$.
+                        Let $c_1, \dots, c_n$ be real constants. Consider the linear combination $U = \sum_{k=1}^n c_k u_k$.</p>
+                        <p>We need to show $U$ is harmonic, i.e., $\nabla^2 U = 0$.
+                        The Laplacian operator $\nabla^2 = \frac{\partial^2}{\partial x^2} + \frac{\partial^2}{\partial y^2}$ is linear.
+                        $$ \nabla^2 U = \nabla^2 \left( \sum_{k=1}^n c_k u_k \right) $$
+                        By linearity:
+                        $$ \nabla^2 U = \sum_{k=1}^n c_k (\nabla^2 u_k) $$
+                        Since each $u_k$ is harmonic, $\nabla^2 u_k = 0$.
+                        $$ \nabla^2 U = \sum_{k=1}^n c_k (0) = 0 $$
+                        Therefore, the linear combination $U$ is harmonic in $D$.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 7 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q7: Is $u^2$ Harmonic if $u$ is?</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>If u is harmonic, is u² harmonic ?</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>No, not necessarily. $u^2$ is harmonic if and only if $u$ is a constant function. For a non-constant harmonic $u$, $\nabla^2(u^2) = 2(u_x^2 + u_y^2)$ which is generally not zero.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Let $u(x,y)$ be harmonic, so $u_{xx} + u_{yy} = 0$.<br/>
+                        Let $U = u^2$. We compute the Laplacian of $U$:
+                        $$U_x = 2u u_x$$
+                        $$U_{xx} = 2(u_x^2 + u u_{xx})$$
+                        $$U_y = 2u u_y$$
+                        $$U_{yy} = 2(u_y^2 + u u_{yy})$$
+                        $$U_{xx} + U_{yy} = 2(u_x^2 + u u_{xx}) + 2(u_y^2 + u u_{yy})$$
+                        $$U_{xx} + U_{yy} = 2(u_x^2 + u_y^2) + 2u(u_{xx} + u_{yy})$$
+                        Since $u$ is harmonic, $u_{xx} + u_{yy} = 0$.
+                        $$U_{xx} + U_{yy} = 2(u_x^2 + u_y^2)$$
+                        For $U=u^2$ to be harmonic, we need $U_{xx} + U_{yy} = 0$, which means $2(u_x^2 + u_y^2) = 0$.<br/>
+                        Since squares are non-negative, this requires $u_x = 0$ and $u_y = 0$.<br/>
+                        If both first partial derivatives are zero throughout a domain, then $u$ must be constant.</p>
+                        <p>Conclusion: $u^2$ is harmonic if and only if $u$ is a constant function. If $u$ is a non-constant harmonic function, $u^2$ is generally not harmonic. For example, $u(x,y)=x$ is harmonic, but $u^2=x^2$ is not harmonic ($\nabla^2(x^2)=2$).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 8 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q8: $u, v$ Conjugates of Each Other</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Suppose that in a domain $D$, a function $v$ is a harmonic conjugate of $u$ and also that $u$ is a harmonic conjugate of $v$. Show that $u$ and $v$ should be constant throughout $D$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>The conditions imply two sets of CR equations: (a) $u_x=v_y, u_y=-v_x$ and (b) $v_x=u_y, v_y=-u_x$. Combining (a) and (b) forces $u_x=0, u_y=0, v_x=0, v_y=0$. Since the partial derivatives are zero throughout the domain, $u$ and $v$ must be constant.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Given $v$ is a harmonic conjugate of $u$. This means $f(z)=u+iv$ is analytic, and they satisfy the CR equations:
+                        $$u_x = v_y \quad (a)$$
+                        $$u_y = -v_x \quad (b)$$
+                        Given $u$ is a harmonic conjugate of $v$. This means $g(z)=v+iu$ is analytic, and they satisfy the CR equations:
+                        $$v_x = u_y \quad (c)$$
+                        $$v_y = -u_x \quad (d)$$
+                        From (a) $u_x = v_y$ and from (d) $v_y = -u_x$. Combining these gives $u_x = -u_x$, which means $2u_x=0$, so $u_x=0$.<br/>
+                        From (b) $u_y = -v_x$ and from (c) $v_x = u_y$. Combining these gives $u_y = -(u_y)$, which means $2u_y=0$, so $u_y=0$.</p>
+                        <p>Since $u_x=0$ and $u_y=0$ throughout the domain $D$, $u(x,y)$ must be constant. Let $u=c_1$.</p>
+                        <p>Substituting $u_x=0$ and $u_y=0$ into the CR equations:<br/>
+                        From (a): $v_y = u_x = 0$.<br/>
+                        From (c): $v_x = u_y = 0$.<br/>
+                        Since $v_x=0$ and $v_y=0$ throughout the domain $D$, $v(x,y)$ must be constant. Let $v=c_2$.</p>
+                        <p>Therefore, both $u$ and $v$ must be constant throughout $D$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- End Accordion Container -->
+
+
+    <footer> <!-- Optional Footer --> </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div>
+
+    <script>
+        // --- Debounce Function ---
+        function debounce(func, wait) { let timeout; return function(...args) { const later = () => { clearTimeout(timeout); func.apply(this, args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body;
+
+            // --- Font Size Control & Hold ---
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            let currentSize = 10; const minSize = 10; const maxSize = 28; const step = 1;
+            let displayTimeout = null; let holdTimeout = null; let holdInterval = null;
+            const initialHoldDelay = 400; const repeatInterval = 100;
+            const mathJaxDebounceDelay = 350;
+
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax for body");
+                    MathJax.typesetPromise([bodyEl]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            const handleFontResizeEnd = debounce(() => {
+                console.log("Font resize finished.");
+                queueMathJaxTypeset();
+            }, mathJaxDebounceDelay);
+
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px'; display.classList.add('visible');
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => { display.classList.remove('visible'); displayTimeout = null; }, 1500);
+                    handleFontResizeEnd(); return true;
+                } return false;
+            }
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition');
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                handleFontResizeEnd();
+            }
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); updateFontSize(currentSize + direction * step);
+                if (holdTimeout) clearTimeout(holdTimeout); if (holdInterval) clearInterval(holdInterval);
+                holdTimeout = setTimeout(() => { holdInterval = setInterval(() => { if (!updateFontSize(currentSize + direction * step)) { stopHolding(); } }, repeatInterval); }, initialHoldDelay);
+            }
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                window.addEventListener('mouseup', stopHolding);
+                minusBtn.addEventListener('mouseleave', stopHolding); plusBtn.addEventListener('mouseleave', stopHolding);
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px'); display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+            } else { console.error("Font control elements not found!"); }
+
+
+            // --- Accordion Logic (with State Indicator & MathJax Trigger - Robust Measurement) ---
+            const accordionItems = document.querySelectorAll('.accordion-item');
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                const content = item.querySelector('.accordion-content');
+                const innerContent = content.querySelector('.content-inner');
+                const finalAnswerBlock = innerContent.querySelector('.final-answer-block');
+                const solutionBlock = innerContent.querySelector('.solution-block');
+
+
+                header.addEventListener('click', () => {
+                    const currentState = item.getAttribute('data-state');
+                    let nextState;
+
+                    if (currentState === 'collapsed') {
+                        if (!item.classList.contains('visited')) { item.classList.add('visited'); }
+                        nextState = 'state1';
+                    } else if (currentState === 'state1') {
+                        nextState = 'state2';
+                    } else { // state2
+                        nextState = 'collapsed';
+                    }
+
+                    item.setAttribute('data-state', nextState);
+                    console.log(`Item state changed to: ${nextState}`);
+
+                    const isCollapsed = nextState === 'collapsed';
+                    const showAnswer = nextState === 'state1';
+                    const showSolution = nextState === 'state2';
+
+                    // Toggle visibility of answer/solution blocks
+                    if (finalAnswerBlock) finalAnswerBlock.classList.toggle('hidden', !(showAnswer || showSolution)); // Show answer if state 1 or 2
+                    if (solutionBlock) solutionBlock.classList.toggle('hidden', !showSolution); // Show solution only if state 2
+
+
+                    // --- Expansion/Collapse Logic ---
+                    if (!isCollapsed) {
+                        // --- EXPANDING ---
+                        let mathJaxPromise = Promise.resolve();
+                        if (window.MathJax && MathJax.typesetPromise) {
+                            // Determine the specific block that just became visible or needs typesetting
+                             let elementToTypeset = null;
+                             if (nextState === 'state1' && finalAnswerBlock && !finalAnswerBlock.dataset.mathjaxTypeset) {
+                                 elementToTypeset = finalAnswerBlock;
+                             } else if (nextState === 'state2' && solutionBlock && !solutionBlock.dataset.mathjaxTypeset) {
+                                 elementToTypeset = solutionBlock;
+                                 // Also ensure answer block is typeset if it wasn't already
+                                 if (finalAnswerBlock && !finalAnswerBlock.dataset.mathjaxTypeset) {
+                                     MathJax.typesetPromise([finalAnswerBlock]).then(() => {
+                                         finalAnswerBlock.dataset.mathjaxTypeset = 'true';
+                                     }).catch(err => console.error('MathJax typesetting error for answer block on state 2:', err));
+                                 }
+                             }
+
+                            if(elementToTypeset) {
+                                console.log(`Queueing MathJax for newly visible block in: ${header.querySelector('h2').textContent.trim()}`);
+                                mathJaxPromise = MathJax.typesetPromise([elementToTypeset]).then(() => {
+                                    elementToTypeset.dataset.mathjaxTypeset = 'true'; // Mark as typeset
+                                }).catch(err => {
+                                    console.error('MathJax typesetting error during expand:', err);
+                                });
+                            } else {
+                                console.log("Content already typeset or no specific block to typeset.");
+                            }
+                        } else { console.warn("MathJax not available for typesetting during expand."); }
+
+                         mathJaxPromise.then(() => {
+                            // Recalculate height *after* MathJax (if it ran) and content visibility is updated
+                             requestAnimationFrame(() => {
+                                 requestAnimationFrame(() => { // Double rAF
+                                    content.style.maxHeight = 'none'; // Remove previous limit to measure full height
+                                    const currentHeight = content.scrollHeight; // Measure height including padding
+                                    console.log(`Measured scrollHeight after MathJax & rAF: ${currentHeight}px`);
+
+                                    if (currentHeight <= 0 && !isCollapsed) {
+                                         console.warn("Scroll height is zero! Check content visibility/rendering.");
+                                     }
+                                     content.style.maxHeight = '0px'; // Set to 0 to start transition from collapsed state
+                                     requestAnimationFrame(() => { // Apply final height in next frame
+                                         content.style.maxHeight = currentHeight + 'px';
+                                         console.log(`Applied maxHeight: ${currentHeight}px`);
+                                     });
+                                 });
+                             });
+                         });
+
+                    } else {
+                        // --- COLLAPSING ---
+                        if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                           content.style.maxHeight = '0px';
+                           console.log("Collapsing: Set maxHeight to 0px");
+                           // Optional: Reset MathJax typesetting status if desired on collapse
+                           // if (finalAnswerBlock) delete finalAnswerBlock.dataset.mathjaxTypeset;
+                           // if (solutionBlock) delete solutionBlock.dataset.mathjaxTypeset;
+                        }
+                    }
+                });
+            });
+            console.log("Accordion logic (Robust Measurement) with state indicators and MathJax applied.");
+
+
+            // --- Initial MathJax Typeset on Load ---
+             if (window.MathJax) {
+                 MathJax.startup.promise.then(() => {
+                     console.log("Queueing initial MathJax typeset after load");
+                     const questionBlocks = document.querySelectorAll('.question-block'); // Only typeset questions initially
+                     MathJax.typesetPromise(Array.from(questionBlocks)).catch((err) => console.error('MathJax initial typesetting error:', err));
+                 });
+             }
+
+        }); // End DOMContentLoaded
+    </script>
+
+</body>
+</html>

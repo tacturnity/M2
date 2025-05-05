@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 14</title> <!-- UPDATED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: { ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); } }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Base Styles --- */
+        :root {
+            --accent-color: #F08080; /* Light Coral */
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --border-color: #555;
+            --header-bg: #2f2f2f;
+            --header-hover-bg: #3f3f3f;
+            --content-bg: #282828;
+            /* Indicator Colors */
+            --indicator-unvisited: transparent;
+            --indicator-answer: #f7dc6f;
+            --indicator-solution: #58d68d;
+            --indicator-visited-closed: var(--indicator-solution);
+            --anim-duration: 0.5s;
+            --anim-easing: cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace; color: var(--text-color); line-height: 1.7;
+            padding: 25px; background-color: var(--bg-color); min-height: 100vh;
+            font-size: var(--base-font-size); transition: font-size 0.2s ease-in-out;
+            padding-bottom: 80px; overflow-x: hidden;
+        }
+        body.no-font-transition { transition: none !important; }
+
+        /* Headings */
+        h1 {
+            font-size: 2.4em; color: var(--accent-color); font-weight: 700; padding-bottom: 12px;
+            margin: 1.5em auto; border-bottom: 3px solid var(--accent-color);
+            animation: fadeIn 0.8s ease-out both 0.1s; letter-spacing: -0.5px; text-align: center; max-width: 800px;
+        }
+
+        /* --- Accordion Styles --- */
+        .accordion { max-width: 900px; margin: 20px auto; }
+        .accordion-item {
+            border: 1px solid var(--border-color); border-radius: 8px;
+            overflow: hidden; margin-bottom: 25px; background-color: var(--content-bg);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .accordion-item:hover { border-color: #777; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4); }
+        .accordion-header {
+            background-color: var(--header-bg); padding: 18px 25px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background-color 0.3s ease, border-bottom-color var(--anim-duration) var(--anim-easing); /* Updated */
+            border-bottom: 1px solid var(--border-color); position: relative; z-index: 2;
+        }
+        .accordion-item[data-state="collapsed"] .accordion-header { border-bottom-color: transparent; }
+        .accordion-header:hover { background-color: var(--header-hover-bg); }
+        .accordion-header h2 { margin: 0; font-size: 1.2em; color: var(--text-color); text-align: left; padding-right: 10px;} /* Added padding */
+
+        /* --- State Indicator --- */
+        .state-indicator {
+            width: 12px; height: 12px; border-radius: 50%;
+            background-color: var(--indicator-unvisited); display: inline-block; margin-left: 15px;
+            flex-shrink: 0; transition: background-color 0.3s ease; border: 1px solid var(--header-bg);
+        }
+        .accordion-item[data-state="state1"] .state-indicator { background-color: var(--indicator-answer); border-color: transparent; }
+        .accordion-item[data-state="state2"] .state-indicator { background-color: var(--indicator-solution); border-color: transparent; }
+        .accordion-item.visited[data-state="collapsed"] .state-indicator { background-color: var(--indicator-visited-closed); border-color: transparent; }
+
+
+        /* Content Area & Animations */
+        .accordion-content {
+            padding: 0 25px; max-height: 0; overflow: hidden;
+            transition: max-height var(--anim-duration) var(--anim-easing),
+                        padding-top var(--anim-duration) var(--anim-easing),
+                        padding-bottom var(--anim-duration) var(--anim-easing);
+            box-sizing: border-box; position: relative; z-index: 1;
+        }
+        .accordion-item:not([data-state="collapsed"]) .accordion-content { padding-top: 20px; }
+        .content-inner {
+            padding-bottom: 25px; opacity: 0; transform: translateY(10px);
+            transition: opacity 0.4s ease-out 0.15s, transform 0.4s ease-out 0.15s;
+        }
+        .accordion-item:not([data-state="collapsed"]) .content-inner { opacity: 1; transform: translateY(0); }
+
+        /* Content Blocks Structure & Styling */
+        .question-block, .final-answer-block, .solution-block {
+            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);
+        }
+        .content-inner > div:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .question-block strong, .final-answer-block strong, .solution-block strong {
+            color: var(--accent-color); display: block; margin-bottom: 8px; font-size: 1.1em;
+        }
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; margin-bottom: 1em; }
+        li { margin-bottom: 8px; font-size: inherit; }
+
+        /* --- UPDATED Styling for MathJax containers --- */
+        mjx-container {
+            margin: 0.2em 0; /* Reduced vertical space around inline math */
+            text-align: left !important; /* Ensure left alignment */
+            /* Removed display: block; */
+            /* Removed overflow settings here */
+             /* Allow MathJax to handle default display (inline-block) */
+        }
+        mjx-container[display="true"] {
+             margin: 1em 0 !important; /* Restore slightly more vertical space for display math */
+             display: block;           /* Explicitly make display math block-level */
+             overflow-x: auto;       /* Apply overflow only to display math */
+             overflow-y: hidden;
+        }
+        /* Optional: Style scrollbar for display math containers */
+        mjx-container[display="true"]::-webkit-scrollbar { height: 6px; }
+        mjx-container[display="true"]::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.3); border-radius: 3px; }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb { background-color: #666; border-radius: 3px; }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb:hover { background-color: #888; }
+
+
+        /* General Utility Styles */
+        .hidden { display: none !important; }
+
+        /* Footer & Font Control */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both 0.7s; }
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: var(--accent-color); }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Tutorial 14</h1> <!-- UPDATED H1 -->
+    </header>
+
+    <div class="accordion">
+        <!-- Question 1 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q1: Cauchy Integral Formula Applications</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Use Cauchy integral formula to evaluate the following:</p>
+                        <p>(a) $\oint_{|z-2|=2} \frac{\text{Log}(z+1)}{z-3} dz$</p>
+                        <p>(b) $\oint_{|z|=4} \frac{z^4}{(z-i)^3} dz$</p>
+                        <p>(c) $\oint_{|z|=5} \frac{z+5}{z^2-3z-4} dz$</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $4\pi i \ln 2$</p>
+                        <p>(b) $-12\pi i$</p>
+                        <p>(c) $2\pi i$</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p><strong>(a) $\oint_{|z-2|=2} \frac{\text{Log}(z+1)}{z-3} dz$</strong><br/>
+                        Contour $C$: circle center $z=2$, radius $R=2$.<br/>
+                        Singularity $z_0=3$. $|z_0-2|=|3-2|=1 < 2$, so $z_0$ is inside $C$.<br/>
+                        Let $f(z) = \text{Log}(z+1)$. This is analytic except for $z+1 \le 0$, i.e., $z \le -1$. The contour $C$ does not include or cross this cut.<br/>
+                        By CIF: $\oint_C \frac{f(z)}{z-z_0} dz = 2\pi i f(z_0)$.
+                        $$ \oint_C \frac{\text{Log}(z+1)}{z-3} dz = 2\pi i f(3) = 2\pi i \text{Log}(3+1) = 2\pi i \text{Log}(4) $$
+                        Log$(4) = \ln|4| + i\text{Arg}(4) = \ln 4 + i(0) = \ln 4 = 2\ln 2$.
+                        $$ \text{Integral} = 2\pi i (2\ln 2) = 4\pi i \ln 2 $$</p>
+                        <p><strong>(b) $\oint_{|z|=4} \frac{z^4}{(z-i)^3} dz$</strong><br/>
+                        Contour $C$: circle center $z=0$, radius $R=4$.<br/>
+                        Singularity $z_0=i$. $|z_0-0|=|i|=1 < 4$, so $z_0$ is inside $C$.<br/>
+                        Use CIF for derivatives: $\oint_C \frac{f(z)}{(z-z_0)^{n+1}} dz = \frac{2\pi i}{n!} f^{(n)}(z_0)$.<br/>
+                        Here $f(z)=z^4$, $z_0=i$, $n+1=3 \implies n=2$.<br/>
+                        $f(z)=z^4$ is entire.<br/>
+                        $f'(z)=4z^3$, $f''(z)=12z^2$.<br/>
+                        $f''(i) = 12(i)^2 = -12$.<br/>
+                        $$ \oint_C \frac{z^4}{(z-i)^3} dz = \frac{2\pi i}{2!} f''(i) = \frac{2\pi i}{2} (-12) = -12\pi i $$</p>
+                        <p><strong>(c) $\oint_{|z|=5} \frac{z+5}{z^2-3z-4} dz$</strong><br/>
+                        Contour $C$: circle center $z=0$, radius $R=5$.<br/>
+                        Denominator $z^2-3z-4 = (z-4)(z+1)$. Singularities $z_1=4, z_2=-1$.<br/>
+                        $|z_1|=|4|=4 < 5$ (inside). $|z_2|=|-1|=1 < 5$ (inside).<br/>
+                        Use partial fractions: $\frac{z+5}{(z-4)(z+1)} = \frac{A}{z-4} + \frac{B}{z+1}$.<br/>
+                        $A = \frac{4+5}{4+1} = 9/5$. $B = \frac{-1+5}{-1-4} = 4/(-5) = -4/5$.<br/>
+                        $$ \oint_C \left( \frac{9/5}{z-4} - \frac{4/5}{z+1} \right) dz = \frac{9}{5} \oint_C \frac{dz}{z-4} - \frac{4}{5} \oint_C \frac{dz}{z+1} $$
+                        Using CIF with $f(z)=1$:
+                        $$ = \frac{9}{5} (2\pi i f(4)) - \frac{4}{5} (2\pi i f(-1)) = \frac{9}{5} (2\pi i) - \frac{4}{5} (2\pi i) $$
+                        $$ = (\frac{9}{5} - \frac{4}{5}) 2\pi i = \frac{5}{5} (2\pi i) = 2\pi i $$</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q2: Laurent Series and Integral Evaluation</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find the Laurent series expansion for $f(z) = \frac{e^z}{(z+1)^2}$ in the domain $0 < |z+1| < \infty$. Hence evaluate $\oint_{|z+1|=1} \frac{e^z}{(z+1)^4} dz$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>Laurent Series: $f(z) = \sum_{k=-2}^{\infty} \frac{e^{-1}}{(k+2)!} (z+1)^k$.<br/>
+                        Integral Value: $\frac{\pi i}{3e}$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Expand around $z_0=-1$. Let $w=z+1 \implies z=w-1$. Domain $0<|w|<\infty$.
+                        $$ f(z) = \frac{e^{w-1}}{w^2} = \frac{e^{-1}e^w}{w^2} $$
+                        Use Taylor series for $e^w = \sum_{n=0}^{\infty} \frac{w^n}{n!}$:
+                        $$ f(z) = \frac{e^{-1}}{w^2} \sum_{n=0}^{\infty} \frac{w^n}{n!} = e^{-1} \sum_{n=0}^{\infty} \frac{w^{n-2}}{n!} $$
+                        $$ = e^{-1} \left( \frac{w^{-2}}{0!} + \frac{w^{-1}}{1!} + \frac{w^0}{2!} + \frac{w^1}{3!} + \dots \right) $$
+                        Substitute back $w=z+1$:
+                        $$ f(z) = \frac{1}{e} \left( \frac{1}{(z+1)^2} + \frac{1}{z+1} + \frac{1}{2!} + \frac{z+1}{3!} + \dots \right) $$
+                        $$ f(z) = \sum_{k=-2}^{\infty} \frac{e^{-1}}{(k+2)!} (z+1)^k $$
+                        This is valid for $0 < |z+1| < \infty$.</p>
+                        <p>Evaluate $I = \oint_{|z+1|=1} \frac{e^z}{(z+1)^4} dz$.<br/>
+                        Contour $C$ is $|z+1|=1$. Center $z_0=-1$, radius $R=1$.<br/>
+                        Use CIF for derivatives: $\oint_C \frac{g(z)}{(z-z_0)^{n+1}} dz = \frac{2\pi i}{n!} g^{(n)}(z_0)$.<br/>
+                        Here $g(z)=e^z$, $z_0=-1$, $n+1=4 \implies n=3$.<br/>
+                        $g(z)=e^z \implies g'(z)=e^z, g''(z)=e^z, g'''(z)=e^z$.<br/>
+                        $g'''(-1) = e^{-1}$.<br/>
+                        $$ I = \frac{2\pi i}{3!} g'''(-1) = \frac{2\pi i}{6} e^{-1} = \frac{\pi i}{3e} $$</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q3: Laurent Series in Different Domains</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find the Laurent series for the function $f(z) = \frac{1}{z+z^2}$ in each of the following domains:<br/>
+                        (a) $0 < |z| < 1$<br/>
+                        (b) $|z| > 1$<br/>
+                        (c) $0 < |z+1| < 1$<br/>
+                        (d) $|z+1| > 1$</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $z^{-1} - \sum_{n=0}^{\infty} (-1)^n z^n = z^{-1} - 1 + z - z^2 + \dots$</p>
+                        <p>(b) $\sum_{k=2}^{\infty} (-1)^k z^{-k} = z^{-2} - z^{-3} + z^{-4} - \dots$</p>
+                        <p>(c) $-(z+1)^{-1} - \sum_{n=0}^{\infty} (z+1)^n = -(z+1)^{-1} - 1 - (z+1) - \dots$</p>
+                        <p>(d) $\sum_{k=2}^{\infty} (z+1)^{-k} = (z+1)^{-2} + (z+1)^{-3} + \dots$</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>First, $f(z) = \frac{1}{z(1+z)} = \frac{1}{z} - \frac{1}{1+z}$.</p>
+                        <p><strong>(a) $0 < |z| < 1$.</strong> Expand around $z=0$.<br/>
+                        $\frac{1}{z}$ is okay.<br/>
+                        $-\frac{1}{1+z} = -\frac{1}{1-(-z)} = -\sum_{n=0}^{\infty} (-z)^n = \sum_{n=0}^{\infty} (-1)^{n+1} z^n = -1+z-z^2+\dots$.<br/>
+                        $f(z) = z^{-1} + \sum_{n=0}^{\infty} (-1)^{n+1} z^n = z^{-1} - 1 + z - z^2 + \dots$.</p>
+                        <p><strong>(b) $|z| > 1$.</strong> Expand around $z=0$.<br/>
+                        $\frac{1}{z}$ is okay.<br/>
+                        $-\frac{1}{1+z} = -\frac{1}{z(1+1/z)} = -\frac{1}{z} \frac{1}{1-(-1/z)}$. Since $|-1/z|<1$:<br/>
+                        $= -\frac{1}{z} \sum_{n=0}^{\infty} (-1/z)^n = -\frac{1}{z} \sum_{n=0}^{\infty} (-1)^n z^{-n} = \sum_{n=0}^{\infty} (-1)^{n+1} z^{-n-1}$.<br/>
+                        $= -z^{-1} + z^{-2} - z^{-3} + z^{-4} - \dots$<br/>
+                        $f(z) = z^{-1} + (-z^{-1} + z^{-2} - z^{-3} + \dots) = z^{-2} - z^{-3} + z^{-4} - \dots = \sum_{k=2}^{\infty} (-1)^k z^{-k}$.</p>
+                        <p><strong>(c) $0 < |z+1| < 1$.</strong> Expand around $z=-1$. Let $w=z+1$. $z=w-1$. Domain $0<|w|<1$.<br/>
+                        $f(z) = \frac{1}{w-1} - \frac{1}{w}$.<br/>
+                        $-\frac{1}{w}$ is okay.<br/>
+                        $\frac{1}{w-1} = \frac{-1}{1-w}$. Since $|w|<1$:<br/>
+                        $= -\sum_{n=0}^{\infty} w^n = -1 - w - w^2 - \dots$<br/>
+                        $f(z) = -w^{-1} - \sum_{n=0}^{\infty} w^n = -(z+1)^{-1} - \sum_{n=0}^{\infty} (z+1)^n$.</p>
+                        <p><strong>(d) $|z+1| > 1$.</strong> Expand around $z=-1$. Let $w=z+1$. Domain $|w|>1$.<br/>
+                        $f(z) = \frac{1}{w-1} - \frac{1}{w}$.<br/>
+                        $-\frac{1}{w}$ is okay.<br/>
+                        $\frac{1}{w-1} = \frac{1}{w(1-1/w)}$. Since $|1/w|<1$:<br/>
+                        $= \frac{1}{w} \sum_{n=0}^{\infty} (1/w)^n = \frac{1}{w} \sum_{n=0}^{\infty} w^{-n} = \sum_{n=0}^{\infty} w^{-n-1}$.<br/>
+                        $= w^{-1} + w^{-2} + w^{-3} + \dots$<br/>
+                        $f(z) = (w^{-1} + w^{-2} + w^{-3} + \dots) - w^{-1} = w^{-2} + w^{-3} + \dots = \sum_{k=2}^{\infty} w^{-k}$.<br/>
+                        $f(z) = \sum_{k=2}^{\infty} (z+1)^{-k}$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 4 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q4: Two Laurent Series for $\frac{1}{z(1+z^2)}$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Write two Laurent series in powers of $z$ of the function $f(z) = \frac{1}{z(1+z^2)}$ in certain domains, and specify those domains.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>Domain $0 < |z| < 1$: $f(z) = z^{-1} + \sum_{n=0}^{\infty} (-1)^{n+1} z^{2n+1}$.</p>
+                        <p>Domain $|z| > 1$: $f(z) = \sum_{k=1}^{\infty} (-1)^{k-1} z^{-(2k+1)}$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Partial fractions: $f(z) = \frac{1}{z} - \frac{z}{1+z^2}$.<br/>
+                        Singularities at $z=0, \pm i$. Annular domains centered at $z=0$ are $D_1: 0<|z|<1$ and $D_2: |z|>1$.</p>
+                        <p><strong>Domain $D_1: 0 < |z| < 1$.</strong><br/>
+                        $\frac{1}{z}$ is okay.<br/>
+                        $-\frac{z}{1+z^2} = -z \frac{1}{1-(-z^2)}$. Since $|-z^2|=|z|^2<1$:<br/>
+                        $= -z \sum_{n=0}^{\infty} (-z^2)^n = -z \sum_{n=0}^{\infty} (-1)^n z^{2n} = \sum_{n=0}^{\infty} (-1)^{n+1} z^{2n+1}$.<br/>
+                        $f(z) = z^{-1} + \sum_{n=0}^{\infty} (-1)^{n+1} z^{2n+1} = z^{-1} - z + z^3 - z^5 + \dots$.</p>
+                        <p><strong>Domain $D_2: |z| > 1$.</strong><br/>
+                        $\frac{1}{z}$ is okay.<br/>
+                        $-\frac{z}{1+z^2} = -\frac{z}{z^2(1+1/z^2)} = -\frac{1}{z} \frac{1}{1-(-1/z^2)}$. Since $|-1/z^2|=1/|z|^2<1$:<br/>
+                        $= -\frac{1}{z} \sum_{n=0}^{\infty} (-1/z^2)^n = -\frac{1}{z} \sum_{n=0}^{\infty} (-1)^n z^{-2n} = \sum_{n=0}^{\infty} (-1)^{n+1} z^{-2n-1}$.<br/>
+                        $= -z^{-1} + z^{-3} - z^{-5} + \dots$<br/>
+                        $f(z) = z^{-1} + (-z^{-1} + z^{-3} - z^{-5} + \dots) = z^{-3} - z^{-5} + z^{-7} - \dots$<br/>
+                        $f(z) = \sum_{k=1}^{\infty} (-1)^{k-1} z^{-(2k+1)}$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 5 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q5: Laurent Series for Log(z)</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Does the principal branch of log z have a Laurent series expansion in the domain $\mathbb{C} - \{0\}$ ?.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>No. The principal branch Log$(z)$ is not analytic on the negative real axis, which is part of the domain $\mathbb{C} - \{0\}$. A function must be analytic throughout an annulus to have a Laurent series expansion there.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>No.<br/>
+                        The principal branch of the logarithm, $f(z) = \text{Log}(z)$, is defined and analytic in the domain $D = \mathbb{C} \setminus (-\infty, 0]$.<br/>
+                        A Laurent series expansion for a function $g(z)$ around $z_0=0$ in the domain $\mathbb{C} - \{0\}$ (which corresponds to the annulus $0 < |z| < \infty$) requires $g(z)$ to be analytic throughout this entire annulus.<br/>
+                        However, Log$(z)$ is not analytic on the negative real axis, which is contained within the annulus $0 < |z| < \infty$.<br/>
+                        Since Log$(z)$ is not analytic throughout $\mathbb{C} - \{0\}$, it does not have a Laurent series expansion valid in this domain.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 6 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q6: Residue Theorem Applications</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Evaluate each of the following integrals over the given circle in positive sense using Cauchy's residue theorem.</p>
+                        <p>(a) $\oint_{|z|=5} \frac{\sin z}{z^2-4} dz$</p>
+                        <p>(b) $\oint_{|z|=3} \frac{e^z}{z(z-2)^3} dz$</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $\pi i \sin 2$</p>
+                        <p>(b) $\frac{\pi i (e^2-1)}{4}$</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Use $\oint_C f(z) dz = 2\pi i \sum \text{Res}(f, z_k)$, where $z_k$ are singularities inside $C$.</p>
+                        <p><strong>(a) $\oint_{|z|=5} \frac{\sin z}{z^2-4} dz$</strong><br/>
+                        $f(z) = \frac{\sin z}{(z-2)(z+2)}$. Singularities at $z_1=2, z_2=-2$. Both are inside $|z|=5$. They are simple poles.<br/>
+                        Res$(f, 2) = \lim_{z \to 2} (z-2)\frac{\sin z}{(z-2)(z+2)} = \frac{\sin 2}{2+2} = \frac{\sin 2}{4}$.<br/>
+                        Res$(f, -2) = \lim_{z \to -2} (z+2)\frac{\sin z}{(z-2)(z+2)} = \frac{\sin(-2)}{-2-2} = \frac{-\sin 2}{-4} = \frac{\sin 2}{4}$.<br/>
+                        Integral $= 2\pi i (\text{Res}(f, 2) + \text{Res}(f, -2)) = 2\pi i (\frac{\sin 2}{4} + \frac{\sin 2}{4}) = 2\pi i (\frac{2\sin 2}{4}) = \pi i \sin 2$.</p>
+                        <p><strong>(b) $\oint_{|z|=3} \frac{e^z}{z(z-2)^3} dz$</strong><br/>
+                        $f(z) = \frac{e^z}{z(z-2)^3}$. Singularities at $z_1=0$ (simple pole) and $z_2=2$ (pole of order 3). Both are inside $|z|=3$.<br/>
+                        Res$(f, 0) = \lim_{z \to 0} z \frac{e^z}{z(z-2)^3} = \lim_{z \to 0} \frac{e^z}{(z-2)^3} = \frac{e^0}{(-2)^3} = -\frac{1}{8}$.<br/>
+                        Res$(f, 2) = \frac{1}{(3-1)!} \lim_{z \to 2} \frac{d^2}{dz^2} [(z-2)^3 f(z)] = \frac{1}{2!} \lim_{z \to 2} \frac{d^2}{dz^2} [\frac{e^z}{z}]$.<br/>
+                        Let $g(z)=e^z/z$. $g'(z)=\frac{e^z(z-1)}{z^2}$. $g''(z)=\frac{e^z(z^2-2z+2)}{z^3}$.<br/>
+                        $\lim_{z \to 2} g''(z) = \frac{e^2(4-4+2)}{2^3} = \frac{2e^2}{8} = \frac{e^2}{4}$.<br/>
+                        Res$(f, 2) = \frac{1}{2} (\frac{e^2}{4}) = \frac{e^2}{8}$.<br/>
+                        Integral $= 2\pi i (\text{Res}(f, 0) + \text{Res}(f, 2)) = 2\pi i (-\frac{1}{8} + \frac{e^2}{8}) = 2\pi i \frac{e^2-1}{8} = \frac{\pi i (e^2-1)}{4}$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div> <!-- End Accordion Container -->
+
+
+    <footer> <!-- Optional Footer --> </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div>
+
+    <script>
+        // --- Debounce Function ---
+        function debounce(func, wait) { let timeout; return function(...args) { const later = () => { clearTimeout(timeout); func.apply(this, args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body;
+
+            // --- Font Size Control & Hold ---
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            let currentSize = 10; const minSize = 10; const maxSize = 28; const step = 1;
+            let displayTimeout = null; let holdTimeout = null; let holdInterval = null;
+            const initialHoldDelay = 400; const repeatInterval = 100;
+            const mathJaxDebounceDelay = 350;
+
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax for body");
+                    MathJax.typesetPromise([bodyEl]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            const handleFontResizeEnd = debounce(() => {
+                console.log("Font resize finished.");
+                queueMathJaxTypeset();
+            }, mathJaxDebounceDelay);
+
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px'; display.classList.add('visible');
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => { display.classList.remove('visible'); displayTimeout = null; }, 1500);
+                    handleFontResizeEnd(); return true;
+                } return false;
+            }
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition');
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                handleFontResizeEnd();
+            }
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); updateFontSize(currentSize + direction * step);
+                if (holdTimeout) clearTimeout(holdTimeout); if (holdInterval) clearInterval(holdInterval);
+                holdTimeout = setTimeout(() => { holdInterval = setInterval(() => { if (!updateFontSize(currentSize + direction * step)) { stopHolding(); } }, repeatInterval); }, initialHoldDelay);
+            }
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                window.addEventListener('mouseup', stopHolding);
+                minusBtn.addEventListener('mouseleave', stopHolding); plusBtn.addEventListener('mouseleave', stopHolding);
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px'); display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+            } else { console.error("Font control elements not found!"); }
+
+
+            // --- Accordion Logic (with State Indicator & MathJax Trigger - Robust Measurement) ---
+            const accordionItems = document.querySelectorAll('.accordion-item');
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                const content = item.querySelector('.accordion-content');
+                const innerContent = content.querySelector('.content-inner');
+                const finalAnswerBlock = innerContent.querySelector('.final-answer-block');
+                const solutionBlock = innerContent.querySelector('.solution-block');
+
+
+                header.addEventListener('click', () => {
+                    const currentState = item.getAttribute('data-state');
+                    let nextState;
+
+                    if (currentState === 'collapsed') {
+                        if (!item.classList.contains('visited')) { item.classList.add('visited'); }
+                        nextState = 'state1';
+                    } else if (currentState === 'state1') {
+                        nextState = 'state2';
+                    } else { // state2
+                        nextState = 'collapsed';
+                    }
+
+                    item.setAttribute('data-state', nextState);
+                    console.log(`Item state changed to: ${nextState}`);
+
+                    const isCollapsed = nextState === 'collapsed';
+                    const showAnswer = nextState === 'state1';
+                    const showSolution = nextState === 'state2';
+
+                    // Toggle visibility of answer/solution blocks
+                    if (finalAnswerBlock) finalAnswerBlock.classList.toggle('hidden', !(showAnswer || showSolution)); // Show answer if state 1 or 2
+                    if (solutionBlock) solutionBlock.classList.toggle('hidden', !showSolution); // Show solution only if state 2
+
+
+                    // --- Expansion/Collapse Logic ---
+                    if (!isCollapsed) {
+                        // --- EXPANDING ---
+                        let mathJaxPromise = Promise.resolve();
+                        if (window.MathJax && MathJax.typesetPromise) {
+                            // Determine the specific block that just became visible or needs typesetting
+                             let elementToTypeset = null;
+                             if (nextState === 'state1' && finalAnswerBlock && !finalAnswerBlock.dataset.mathjaxTypeset) {
+                                 elementToTypeset = finalAnswerBlock;
+                             } else if (nextState === 'state2' && solutionBlock && !solutionBlock.dataset.mathjaxTypeset) {
+                                 elementToTypeset = solutionBlock;
+                                 // Also ensure answer block is typeset if it wasn't already
+                                 if (finalAnswerBlock && !finalAnswerBlock.dataset.mathjaxTypeset) {
+                                     MathJax.typesetPromise([finalAnswerBlock]).then(() => {
+                                         finalAnswerBlock.dataset.mathjaxTypeset = 'true';
+                                     }).catch(err => console.error('MathJax typesetting error for answer block on state 2:', err));
+                                 }
+                             }
+
+                            if(elementToTypeset) {
+                                console.log(`Queueing MathJax for newly visible block in: ${header.querySelector('h2').textContent.trim()}`);
+                                mathJaxPromise = MathJax.typesetPromise([elementToTypeset]).then(() => {
+                                    elementToTypeset.dataset.mathjaxTypeset = 'true'; // Mark as typeset
+                                }).catch(err => {
+                                    console.error('MathJax typesetting error during expand:', err);
+                                });
+                            } else {
+                                console.log("Content already typeset or no specific block to typeset.");
+                            }
+                        } else { console.warn("MathJax not available for typesetting during expand."); }
+
+                         mathJaxPromise.then(() => {
+                            // Recalculate height *after* MathJax (if it ran) and content visibility is updated
+                             requestAnimationFrame(() => {
+                                 requestAnimationFrame(() => { // Double rAF
+                                    content.style.maxHeight = 'none'; // Remove previous limit to measure full height
+                                    const currentHeight = content.scrollHeight; // Measure height including padding
+                                    console.log(`Measured scrollHeight after MathJax & rAF: ${currentHeight}px`);
+
+                                    if (currentHeight <= 0 && !isCollapsed) {
+                                         console.warn("Scroll height is zero! Check content visibility/rendering.");
+                                     }
+                                     content.style.maxHeight = '0px'; // Set to 0 to start transition from collapsed state
+                                     requestAnimationFrame(() => { // Apply final height in next frame
+                                         content.style.maxHeight = currentHeight + 'px';
+                                         console.log(`Applied maxHeight: ${currentHeight}px`);
+                                     });
+                                 });
+                             });
+                         });
+
+                    } else {
+                        // --- COLLAPSING ---
+                        if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                           content.style.maxHeight = '0px';
+                           console.log("Collapsing: Set maxHeight to 0px");
+                           // Optional: Reset MathJax typesetting status if desired on collapse
+                           // if (finalAnswerBlock) delete finalAnswerBlock.dataset.mathjaxTypeset;
+                           // if (solutionBlock) delete solutionBlock.dataset.mathjaxTypeset;
+                        }
+                    }
+                });
+            });
+            console.log("Accordion logic (Robust Measurement) with state indicators and MathJax applied.");
+
+
+            // --- Initial MathJax Typeset on Load ---
+             if (window.MathJax) {
+                 MathJax.startup.promise.then(() => {
+                     console.log("Queueing initial MathJax typeset after load");
+                     const questionBlocks = document.querySelectorAll('.question-block'); // Only typeset questions initially
+                     MathJax.typesetPromise(Array.from(questionBlocks)).catch((err) => console.error('MathJax initial typesetting error:', err));
+                 });
+             }
+
+        }); // End DOMContentLoaded
+    </script>
+
+</body>
+</html>

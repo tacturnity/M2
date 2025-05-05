@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 10</title> <!-- UPDATED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: { ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); } }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Base Styles --- */
+        :root {
+            --accent-color: #F08080; /* Light Coral */
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --border-color: #555;
+            --header-bg: #2f2f2f;
+            --header-hover-bg: #3f3f3f;
+            --content-bg: #282828;
+            /* Indicator Colors */
+            --indicator-unvisited: transparent;
+            --indicator-answer: #f7dc6f;
+            --indicator-solution: #58d68d;
+            --indicator-visited-closed: var(--indicator-solution);
+            --anim-duration: 0.5s;
+            --anim-easing: cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace; color: var(--text-color); line-height: 1.7;
+            padding: 25px; background-color: var(--bg-color); min-height: 100vh;
+            font-size: var(--base-font-size); transition: font-size 0.2s ease-in-out;
+            padding-bottom: 80px; overflow-x: hidden;
+        }
+        body.no-font-transition { transition: none !important; }
+
+        /* Headings */
+        h1 {
+            font-size: 2.4em; color: var(--accent-color); font-weight: 700; padding-bottom: 12px;
+            margin: 1.5em auto; border-bottom: 3px solid var(--accent-color);
+            animation: fadeIn 0.8s ease-out both 0.1s; letter-spacing: -0.5px; text-align: center; max-width: 800px;
+        }
+
+        /* --- Accordion Styles --- */
+        .accordion { max-width: 900px; margin: 20px auto; }
+        .accordion-item {
+            border: 1px solid var(--border-color); border-radius: 8px;
+            overflow: hidden; margin-bottom: 25px; background-color: var(--content-bg);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .accordion-item:hover { border-color: #777; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4); }
+        .accordion-header {
+            background-color: var(--header-bg); padding: 18px 25px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background-color 0.3s ease, border-bottom-color var(--anim-duration) var(--anim-easing); /* Updated */
+            border-bottom: 1px solid var(--border-color); position: relative; z-index: 2;
+        }
+        .accordion-item[data-state="collapsed"] .accordion-header { border-bottom-color: transparent; }
+        .accordion-header:hover { background-color: var(--header-hover-bg); }
+        .accordion-header h2 { margin: 0; font-size: 1.2em; color: var(--text-color); text-align: left; padding-right: 10px;} /* Added padding */
+
+        /* --- State Indicator --- */
+        .state-indicator {
+            width: 12px; height: 12px; border-radius: 50%;
+            background-color: var(--indicator-unvisited); display: inline-block; margin-left: 15px;
+            flex-shrink: 0; transition: background-color 0.3s ease; border: 1px solid var(--header-bg);
+        }
+        .accordion-item[data-state="state1"] .state-indicator { background-color: var(--indicator-answer); border-color: transparent; }
+        .accordion-item[data-state="state2"] .state-indicator { background-color: var(--indicator-solution); border-color: transparent; }
+        .accordion-item.visited[data-state="collapsed"] .state-indicator { background-color: var(--indicator-visited-closed); border-color: transparent; }
+
+
+        /* Content Area & Animations */
+        .accordion-content {
+            padding: 0 25px; max-height: 0; overflow: hidden;
+            transition: max-height var(--anim-duration) var(--anim-easing),
+                        padding-top var(--anim-duration) var(--anim-easing),
+                        padding-bottom var(--anim-duration) var(--anim-easing);
+            box-sizing: border-box; position: relative; z-index: 1;
+        }
+        .accordion-item:not([data-state="collapsed"]) .accordion-content { padding-top: 20px; }
+        .content-inner {
+            padding-bottom: 25px; opacity: 0; transform: translateY(10px);
+            transition: opacity 0.4s ease-out 0.15s, transform 0.4s ease-out 0.15s;
+        }
+        .accordion-item:not([data-state="collapsed"]) .content-inner { opacity: 1; transform: translateY(0); }
+
+        /* Content Blocks Structure & Styling */
+        .question-block, .final-answer-block, .solution-block {
+            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);
+        }
+        .content-inner > div:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .question-block strong, .final-answer-block strong, .solution-block strong {
+            color: var(--accent-color); display: block; margin-bottom: 8px; font-size: 1.1em;
+        }
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; margin-bottom: 1em; }
+        li { margin-bottom: 8px; font-size: inherit; }
+
+        /* --- UPDATED Styling for MathJax containers --- */
+        mjx-container {
+            margin: 0.2em 0; /* Reduced vertical space around inline math */
+            text-align: left !important; /* Ensure left alignment */
+            /* Removed display: block; */
+            /* Removed overflow settings here */
+             /* Allow MathJax to handle default display (inline-block) */
+        }
+        mjx-container[display="true"] {
+             margin: 1em 0 !important; /* Restore slightly more vertical space for display math */
+             display: block;           /* Explicitly make display math block-level */
+             overflow-x: auto;       /* Apply overflow only to display math */
+             overflow-y: hidden;
+        }
+        /* Optional: Style scrollbar for display math containers */
+        mjx-container[display="true"]::-webkit-scrollbar { height: 6px; }
+        mjx-container[display="true"]::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.3); border-radius: 3px; }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb { background-color: #666; border-radius: 3px; }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb:hover { background-color: #888; }
+
+
+        /* General Utility Styles */
+        .hidden { display: none !important; }
+
+        /* Footer & Font Control */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both 0.7s; }
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: var(--accent-color); }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Tutorial 10</h1> <!-- UPDATED H1 -->
+    </header>
+
+    <div class="accordion">
+        <!-- Question 1 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q1: Existence of Limits</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find which of the following limit exists :</p>
+                        <p>(a) $\lim_{z \to i} \frac{1-iz}{1-z}$</p>
+                        <p>(b) $\lim_{z \to 0} \frac{\bar{z}^2 - z^2}{z}$</p>
+                        <p>(c) $\lim_{z \to 0} \frac{z}{\text{Re}(z)}$</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) Exists, limit is $1+i$.</p>
+                        <p>(b) Exists, limit is $0$.</p>
+                        <p>(c) Does not exist.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p><strong>(a) $\lim_{z \to i} \frac{1-iz}{1-z}$</strong><br/>
+                            Let $f(z) = \frac{1-iz}{1-z}$. This is a rational function. Substituting $z=i$:<br/>
+                            Numerator: $1 - i(i) = 1 - i^2 = 1 - (-1) = 2$.<br/>
+                            Denominator: $1 - i \ne 0$.<br/>
+                            Since the denominator is not zero, we can use direct substitution:
+                            $$ \lim_{z \to i} \frac{1-iz}{1-z} = \frac{1-i(i)}{1-i} = \frac{2}{1-i} $$
+                            Simplify:
+                            $$ \frac{2}{1-i} = \frac{2(1+i)}{(1-i)(1+i)} = \frac{2(1+i)}{1 - (-1)} = \frac{2(1+i)}{2} = 1+i $$
+                            The limit exists and is $1+i$.
+                        </p>
+                        <p><strong>(b) $\lim_{z \to 0} \frac{\bar{z}^2 - z^2}{z}$</strong><br/>
+                            Use polar coordinates: $z = re^{i\theta}$. $\bar{z} = re^{-i\theta}$.
+                            $$\bar{z}^2 - z^2 = r^2e^{-i2\theta} - r^2e^{i2\theta} = r^2(e^{-i2\theta} - e^{i2\theta}) = r^2(-2i \sin(2\theta))$$
+                            The expression is:
+                            $$ \frac{r^2(-2i \sin(2\theta))}{re^{i\theta}} = r (-2i \sin(2\theta)) e^{-i\theta} $$
+                            The limit as $z \to 0$ is $r \to 0$:
+                            $$ \lim_{r \to 0} [r (-2i \sin(2\theta)) e^{-i\theta}] $$
+                            Since $(-2i \sin(2\theta)) e^{-i\theta}$ is bounded, the limit is $0 \times (\text{bounded}) = 0$.<br/>
+                            The limit exists and is 0.
+                        </p>
+                         <p><strong>(c) $\lim_{z \to 0} \frac{z}{\text{Re}(z)}$</strong><br/>
+                            Let $z = x + iy$. The expression is $\frac{x+iy}{x}$.<br/>
+                            Approach $z=0$ along the real axis ($y=0, x \to 0, x \ne 0$):
+                            $$ \lim_{x \to 0} \frac{x+i0}{x} = \lim_{x \to 0} \frac{x}{x} = 1 $$
+                            Approach $z=0$ along the line $y=x$ ($z = x(1+i), x \to 0, x \ne 0$):
+                            $$ \lim_{x \to 0} \frac{x(1+i)}{x} = \lim_{x \to 0} (1+i) = 1+i $$
+                            Since the limit depends on the path (1 vs $1+i$), the limit does not exist.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q2: Differentiation from First Principle</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Differentiate the following functions from the first principle:</p>
+                        <p>(a) $f(z) = \frac{1}{z}$, if $z \ne 0$.</p>
+                        <p>(b) $f(z) = z^2$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $f'(z) = -1/z^2$ for $z \ne 0$.</p>
+                        <p>(b) $f'(z) = 2z$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p><strong>(a) $f(z) = \frac{1}{z}$, if $z \ne 0$.</strong><br/>
+                        The definition is $f'(z) = \lim_{\Delta z \to 0} \frac{f(z+\Delta z) - f(z)}{\Delta z}$.
+                        $$ f'(z) = \lim_{\Delta z \to 0} \frac{\frac{1}{z+\Delta z} - \frac{1}{z}}{\Delta z} $$
+                        $$ f'(z) = \lim_{\Delta z \to 0} \frac{1}{\Delta z} \left[ \frac{z - (z+\Delta z)}{z(z+\Delta z)} \right] $$
+                        $$ f'(z) = \lim_{\Delta z \to 0} \frac{1}{\Delta z} \left[ \frac{-\Delta z}{z(z+\Delta z)} \right] $$
+                        $$ f'(z) = \lim_{\Delta z \to 0} \frac{-1}{z(z+\Delta z)} $$
+                        $$ f'(z) = \frac{-1}{z(z+0)} = -\frac{1}{z^2} $$
+                        The derivative is $f'(z) = -1/z^2$ for $z \ne 0$.
+                        </p>
+                        <p><strong>(b) $f(z) = z^2$.</strong><br/>
+                        $$ f'(z) = \lim_{\Delta z \to 0} \frac{(z+\Delta z)^2 - z^2}{\Delta z} $$
+                        $$ f'(z) = \lim_{\Delta z \to 0} \frac{z^2 + 2z\Delta z + (\Delta z)^2 - z^2}{\Delta z} $$
+                        $$ f'(z) = \lim_{\Delta z \to 0} \frac{2z\Delta z + (\Delta z)^2}{\Delta z} $$
+                        $$ f'(z) = \lim_{\Delta z \to 0} \frac{\Delta z (2z + \Delta z)}{\Delta z} $$
+                        $$ f'(z) = \lim_{\Delta z \to 0} (2z + \Delta z) $$
+                        $$ f'(z) = 2z + 0 = 2z $$
+                        The derivative is $f'(z) = 2z$.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q3: Differentiability of $z \text{Re}(z)$ at Origin</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Prove that the function $f(z) = z \text{Re}(z)$ is differentiable at $z = 0$. What is $f'(0)$ ?</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>The function is differentiable at $z=0$. The limit defining the derivative exists and is unique: $f'(0) = 0$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>We use the definition of the derivative at $z=0$:
+                        $$ f'(0) = \lim_{\Delta z \to 0} \frac{f(0+\Delta z) - f(0)}{\Delta z} $$
+                        First, $f(0) = 0 \times \text{Re}(0) = 0$.<br/>
+                        Next, $f(\Delta z) = \Delta z \text{Re}(\Delta z)$.<br/>
+                        Substitute into the limit:
+                        $$ f'(0) = \lim_{\Delta z \to 0} \frac{\Delta z \text{Re}(\Delta z) - 0}{\Delta z} $$
+                        $$ f'(0) = \lim_{\Delta z \to 0} \frac{\Delta z \text{Re}(\Delta z)}{\Delta z} $$
+                        Cancel $\Delta z$ (assuming $\Delta z \ne 0$):
+                        $$ f'(0) = \lim_{\Delta z \to 0} \text{Re}(\Delta z) $$
+                        Let $\Delta z = \Delta x + i \Delta y$. Then $\text{Re}(\Delta z) = \Delta x$. As $\Delta z \to 0$, both $\Delta x \to 0$ and $\Delta y \to 0$.
+                        $$ f'(0) = \lim_{(\Delta x, \Delta y) \to (0,0)} \Delta x = 0 $$
+                        Since the limit exists and is unique (equal to 0), the function $f(z) = z \text{Re}(z)$ is differentiable at $z=0$, and $f'(0) = 0$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 4 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q4: Differentiability of $\sqrt{|\bar{z}^2 - z^2|}$ at Origin</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Show that the function $f(z) = \sqrt{|\bar{z}^2 - z^2|}$ is not differentiable at the origin.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>The function is not differentiable at $z=0$ because the limit defining $f'(0)$ depends on the path of approach to the origin.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>We check the limit definition of the derivative at $z=0$:
+                        $$ f'(0) = \lim_{\Delta z \to 0} \frac{f(0+\Delta z) - f(0)}{\Delta z} $$
+                        First, $f(0) = \sqrt{|\bar{0}^2 - 0^2|} = 0$.<br/>
+                        Next, $f(\Delta z) = \sqrt{|\overline{\Delta z}^2 - (\Delta z)^2|}$.<br/>
+                        The limit is:
+                        $$ f'(0) = \lim_{\Delta z \to 0} \frac{\sqrt{|\overline{\Delta z}^2 - (\Delta z)^2|}}{\Delta z} $$
+                        Use polar coordinates $\Delta z = re^{i\theta}$.
+                        $$ \overline{\Delta z}^2 - (\Delta z)^2 = r^2 e^{-i2\theta} - r^2 e^{i2\theta} = r^2(e^{-i2\theta} - e^{i2\theta}) = r^2(-2i\sin(2\theta)) $$
+                        $$ |\overline{\Delta z}^2 - (\Delta z)^2| = |r^2(-2i\sin(2\theta))| = 2r^2|\sin(2\theta)| $$
+                        Substitute back:
+                        $$ f'(0) = \lim_{r \to 0, \theta} \frac{\sqrt{2r^2|\sin(2\theta)|}}{re^{i\theta}} = \lim_{r \to 0, \theta} \frac{r\sqrt{2|\sin(2\theta)|}}{re^{i\theta}} $$
+                        Cancel $r$:
+                        $$ f'(0) = \lim_{r \to 0, \theta} \frac{\sqrt{2|\sin(2\theta)|}}{e^{i\theta}} = \frac{\sqrt{2|\sin(2\theta)|}}{e^{i\theta}} $$
+                        The limit depends on $\theta$.<br/>
+                        Path 1: Real axis ($\theta = 0$). $\sin(0) = 0$. Limit is $\frac{0}{1} = 0$.<br/>
+                        Path 2: Line $y=x$ ($\theta = \pi/4$). $\sin(\pi/2) = 1$. Limit is $\frac{\sqrt{2}}{e^{i\pi/4}} = \frac{\sqrt{2}}{(1+i)/\sqrt{2}} = \frac{2}{1+i} = 1-i$.<br/>
+                        Since the limit depends on the path, it does not exist. Therefore, $f(z)$ is not differentiable at the origin.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 5 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q5: Regions of Differentiability</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find the regions where the functions are differentiable :</p>
+                        <p>(a) $f(z) = \text{Im}(z)$.</p>
+                        <p>(b) $f(z) = \bar{z}$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) Nowhere differentiable (Empty set).</p>
+                        <p>(b) Nowhere differentiable (Empty set).</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>A function $f(z) = u(x,y) + iv(x,y)$ is differentiable if the Cauchy-Riemann equations ($u_x = v_y$, $u_y = -v_x$) hold and the partial derivatives are continuous.</p>
+                        <p><strong>(a) $f(z) = \text{Im}(z)$.</strong><br/>
+                            $f(z) = y$. So $u(x,y) = y$, $v(x,y) = 0$.<br/>
+                            $u_x = 0$, $u_y = 1$.<br/>
+                            $v_x = 0$, $v_y = 0$.<br/>
+                            Check C-R equations:<br/>
+                            1. $u_x = v_y \implies 0 = 0$ (Holds).<br/>
+                            2. $u_y = -v_x \implies 1 = -0 \implies 1 = 0$ (Fails).<br/>
+                            Since the C-R equations are never simultaneously satisfied, $f(z)$ is nowhere differentiable.<br/>
+                            <strong>Region of differentiability: Empty set.</strong>
+                        </p>
+                        <p><strong>(b) $f(z) = \bar{z}$.</strong><br/>
+                            $f(z) = x-iy$. So $u(x,y) = x$, $v(x,y) = -y$.<br/>
+                            $u_x = 1$, $u_y = 0$.<br/>
+                            $v_x = 0$, $v_y = -1$.<br/>
+                            Check C-R equations:<br/>
+                            1. $u_x = v_y \implies 1 = -1$ (Fails).<br/>
+                            2. $u_y = -v_x \implies 0 = -0$ (Holds).<br/>
+                            Since the C-R equations are never simultaneously satisfied, $f(z)$ is nowhere differentiable.<br/>
+                            <strong>Region of differentiability: Empty set.</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 6 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q6: Derivative from First Principle (Extended)</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find the derivative from the first principle wherever defined:</p>
+                        <p>(a) $f(z) = \frac{z}{z^2+1}$</p>
+                        <p>(b) $f(z) = |z|$</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $f'(z) = \frac{1 - z^2}{(z^2+1)^2}$ for $z \ne \pm i$.</p>
+                        <p>(b) $f(z)=|z|$ is nowhere differentiable; the derivative is never defined.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p><strong>(a) $f(z) = \frac{z}{z^2+1}$</strong><br/>
+                            The function is differentiable for $z \ne \pm i$.
+                            $$ f'(z) = \lim_{\Delta z \to 0} \frac{1}{\Delta z} \left[ \frac{z+\Delta z}{(z+\Delta z)^2+1} - \frac{z}{z^2+1} \right] $$
+                            $$ f'(z) = \lim_{\Delta z \to 0} \frac{1}{\Delta z} \left[ \frac{(z+\Delta z)(z^2+1) - z((z+\Delta z)^2+1)}{((z+\Delta z)^2+1)(z^2+1)} \right] $$
+                            Numerator $= (z^3+z+z^2\Delta z+\Delta z) - z(z^2+2z\Delta z+(\Delta z)^2+1)$
+                            $= (z^3+z+z^2\Delta z+\Delta z) - (z^3+2z^2\Delta z+z(\Delta z)^2+z)$
+                            $= -z^2\Delta z + \Delta z - z(\Delta z)^2 = \Delta z (1 - z^2 - z\Delta z)$.
+                            $$ f'(z) = \lim_{\Delta z \to 0} \frac{1}{\Delta z} \left[ \frac{\Delta z (1 - z^2 - z\Delta z)}{((z+\Delta z)^2+1)(z^2+1)} \right] $$
+                            $$ f'(z) = \lim_{\Delta z \to 0} \frac{1 - z^2 - z\Delta z}{((z+\Delta z)^2+1)(z^2+1)} $$
+                            $$ f'(z) = \frac{1 - z^2 - 0}{((z)^2+1)(z^2+1)} = \frac{1 - z^2}{(z^2+1)^2} $$
+                            The derivative $f'(z) = \frac{1 - z^2}{(z^2+1)^2}$ is defined for $z \ne \pm i$.
+                        </p>
+                        <p><strong>(b) $f(z) = |z|$</strong><br/>
+                             At $z=0$:
+                            $$ f'(0) = \lim_{\Delta z \to 0} \frac{|0+\Delta z| - |0|}{\Delta z} = \lim_{\Delta z \to 0} \frac{|\Delta z|}{\Delta z} $$
+                            Let $\Delta z = re^{i\theta}$. Limit becomes $\lim_{r \to 0} \frac{r}{re^{i\theta}} = e^{-i\theta}$. The limit depends on $\theta$, so $f$ is not differentiable at $z=0$.<br/>
+                            For $z \ne 0$: Let $f(z) = u+iv = \sqrt{x^2+y^2}$.
+                            $u_x = x/\sqrt{x^2+y^2}$, $u_y = y/\sqrt{x^2+y^2}$, $v_x = 0$, $v_y = 0$.
+                            C-R equations: $u_x=v_y \implies x/\sqrt{x^2+y^2} = 0 \implies x=0$.
+                            $u_y=-v_x \implies y/\sqrt{x^2+y^2} = 0 \implies y=0$.
+                            The C-R equations only hold at $z=0$, but we already showed it's not differentiable there. They do not hold for any $z \ne 0$.<br/>
+                            Therefore, $f(z)=|z|$ is nowhere differentiable.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- End Accordion Container -->
+
+
+    <footer> <!-- Optional Footer --> </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div>
+
+    <script>
+        // --- Debounce Function ---
+        function debounce(func, wait) { let timeout; return function(...args) { const later = () => { clearTimeout(timeout); func.apply(this, args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body;
+
+            // --- Font Size Control & Hold ---
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            let currentSize = 10; const minSize = 10; const maxSize = 28; const step = 1;
+            let displayTimeout = null; let holdTimeout = null; let holdInterval = null;
+            const initialHoldDelay = 400; const repeatInterval = 100;
+            const mathJaxDebounceDelay = 350;
+
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax for body");
+                    MathJax.typesetPromise([bodyEl]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            const handleFontResizeEnd = debounce(() => {
+                console.log("Font resize finished.");
+                queueMathJaxTypeset();
+            }, mathJaxDebounceDelay);
+
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px'; display.classList.add('visible');
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => { display.classList.remove('visible'); displayTimeout = null; }, 1500);
+                    handleFontResizeEnd(); return true;
+                } return false;
+            }
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition');
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                handleFontResizeEnd();
+            }
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); updateFontSize(currentSize + direction * step);
+                if (holdTimeout) clearTimeout(holdTimeout); if (holdInterval) clearInterval(holdInterval);
+                holdTimeout = setTimeout(() => { holdInterval = setInterval(() => { if (!updateFontSize(currentSize + direction * step)) { stopHolding(); } }, repeatInterval); }, initialHoldDelay);
+            }
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                window.addEventListener('mouseup', stopHolding);
+                minusBtn.addEventListener('mouseleave', stopHolding); plusBtn.addEventListener('mouseleave', stopHolding);
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px'); display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+            } else { console.error("Font control elements not found!"); }
+
+
+            // --- Accordion Logic (with State Indicator & MathJax Trigger - Robust Measurement) ---
+            const accordionItems = document.querySelectorAll('.accordion-item');
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                const content = item.querySelector('.accordion-content');
+                const innerContent = content.querySelector('.content-inner');
+                const finalAnswerBlock = innerContent.querySelector('.final-answer-block');
+                const solutionBlock = innerContent.querySelector('.solution-block');
+
+
+                header.addEventListener('click', () => {
+                    const currentState = item.getAttribute('data-state');
+                    let nextState;
+
+                    if (currentState === 'collapsed') {
+                        if (!item.classList.contains('visited')) { item.classList.add('visited'); }
+                        nextState = 'state1';
+                    } else if (currentState === 'state1') {
+                        nextState = 'state2';
+                    } else { // state2
+                        nextState = 'collapsed';
+                    }
+
+                    item.setAttribute('data-state', nextState);
+                    console.log(`Item state changed to: ${nextState}`);
+
+                    const isCollapsed = nextState === 'collapsed';
+                    const showAnswer = nextState === 'state1';
+                    const showSolution = nextState === 'state2';
+
+                    // Toggle visibility of answer/solution blocks
+                    if (finalAnswerBlock) finalAnswerBlock.classList.toggle('hidden', !(showAnswer || showSolution)); // Show answer if state 1 or 2
+                    if (solutionBlock) solutionBlock.classList.toggle('hidden', !showSolution); // Show solution only if state 2
+
+
+                    // --- Expansion/Collapse Logic ---
+                    if (!isCollapsed) {
+                        // --- EXPANDING ---
+                        let mathJaxPromise = Promise.resolve();
+                        if (window.MathJax && MathJax.typesetPromise) {
+                            const elementToTypeset = (nextState === 'state1' && finalAnswerBlock) ? finalAnswerBlock :
+                                                     (nextState === 'state2' && solutionBlock) ? solutionBlock :
+                                                     (nextState === 'state1') ? innerContent : null; // Typeset whole innerContent if opening to state 1 first time
+
+                            if(elementToTypeset && !elementToTypeset.dataset.mathjaxTypeset) {
+                                console.log(`Queueing MathJax for newly visible block/content in: ${header.querySelector('h2').textContent.trim()}`);
+                                mathJaxPromise = MathJax.typesetPromise([elementToTypeset]).then(() => {
+                                    elementToTypeset.dataset.mathjaxTypeset = 'true';
+                                }).catch(err => {
+                                    console.error('MathJax typesetting error during expand:', err);
+                                });
+                             } else {
+                                console.log("Content already typeset or no specific block to typeset.");
+                             }
+                        } else { console.warn("MathJax not available for typesetting during expand."); }
+
+                         mathJaxPromise.then(() => {
+                             requestAnimationFrame(() => {
+                                 requestAnimationFrame(() => {
+                                    content.style.maxHeight = 'none';
+                                    const currentHeight = content.scrollHeight;
+                                    console.log(`Measured scrollHeight after MathJax & rAF: ${currentHeight}px`);
+                                     if (currentHeight <= 0 && !isCollapsed) { console.warn("Scroll height is zero! Check content visibility/rendering."); }
+                                     content.style.maxHeight = '0px';
+                                     requestAnimationFrame(() => {
+                                         content.style.maxHeight = currentHeight + 'px';
+                                         console.log(`Applied maxHeight: ${currentHeight}px`);
+                                     });
+                                 });
+                             });
+                         });
+
+                    } else {
+                        // --- COLLAPSING ---
+                        if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                           content.style.maxHeight = '0px';
+                           console.log("Collapsing: Set maxHeight to 0px");
+                           // Reset MathJax status if desired? Maybe not necessary.
+                           // if (finalAnswerBlock) delete finalAnswerBlock.dataset.mathjaxTypeset;
+                           // if (solutionBlock) delete solutionBlock.dataset.mathjaxTypeset;
+                        }
+                    }
+                });
+            });
+            console.log("Accordion logic (Robust Measurement) with state indicators and MathJax applied.");
+
+
+            // --- Initial MathJax Typeset on Load ---
+             if (window.MathJax) {
+                 MathJax.startup.promise.then(() => {
+                     console.log("Queueing initial MathJax typeset after load");
+                     const questionBlocks = document.querySelectorAll('.question-block'); // Only typeset questions initially
+                     MathJax.typesetPromise(Array.from(questionBlocks)).catch((err) => console.error('MathJax initial typesetting error:', err));
+                 });
+             }
+
+        }); // End DOMContentLoaded
+    </script>
+
+</body>
+</html>

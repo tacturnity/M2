@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 9</title> <!-- UPDATED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: { ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); } }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Base Styles --- */
+        :root {
+            --accent-color: #F08080; /* Light Coral */
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --border-color: #555;
+            --header-bg: #2f2f2f;
+            --header-hover-bg: #3f3f3f;
+            --content-bg: #282828;
+            /* Indicator Colors */
+            --indicator-unvisited: transparent;
+            --indicator-answer: #f7dc6f; /* Yellowish for final answer */
+            --indicator-solution: #58d68d; /* Greenish for full solution */
+            --indicator-visited-closed: var(--indicator-solution); /* When visited & closed, show solution color */
+            --anim-duration: 0.5s;
+            --anim-easing: cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace; color: var(--text-color); line-height: 1.7;
+            padding: 25px; background-color: var(--bg-color); min-height: 100vh;
+            font-size: var(--base-font-size); transition: font-size 0.2s ease-in-out;
+            padding-bottom: 80px; overflow-x: hidden;
+        }
+        body.no-font-transition { transition: none !important; }
+
+        /* Headings */
+        h1 {
+            font-size: 2.4em; color: var(--accent-color); font-weight: 700; padding-bottom: 12px;
+            margin: 1.5em auto; border-bottom: 3px solid var(--accent-color);
+            animation: fadeIn 0.8s ease-out both 0.1s; letter-spacing: -0.5px; text-align: center; max-width: 800px;
+        }
+
+        /* --- Accordion Styles --- */
+        .accordion { max-width: 900px; margin: 20px auto; }
+        .accordion-item {
+            border: 1px solid var(--border-color); border-radius: 8px;
+            overflow: hidden; margin-bottom: 25px; background-color: var(--content-bg);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .accordion-item:hover { border-color: #777; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4); }
+        .accordion-header {
+            background-color: var(--header-bg); padding: 18px 25px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background-color 0.3s ease, border-bottom-color var(--anim-duration) var(--anim-easing); /* Updated transition */
+            border-bottom: 1px solid var(--border-color); position: relative; z-index: 2;
+        }
+        /* Only make border transparent when fully collapsed */
+         .accordion-item[data-state="collapsed"] .accordion-header {
+            border-bottom-color: transparent;
+        }
+
+        .accordion-header:hover { background-color: var(--header-hover-bg); }
+        .accordion-header h2 { margin: 0; font-size: 1.2em; color: var(--text-color); text-align: left; padding-right: 10px; } /* Added padding-right */
+
+        /* --- State Indicator --- */
+        .state-indicator {
+            width: 12px; height: 12px; border-radius: 50%;
+            background-color: var(--indicator-unvisited); display: inline-block; margin-left: 15px;
+            flex-shrink: 0; transition: background-color 0.3s ease; border: 1px solid var(--header-bg);
+        }
+        .accordion-item[data-state="state1"] .state-indicator { background-color: var(--indicator-answer); border-color: transparent; }
+        .accordion-item[data-state="state2"] .state-indicator { background-color: var(--indicator-solution); border-color: transparent; }
+        .accordion-item.visited[data-state="collapsed"] .state-indicator { background-color: var(--indicator-visited-closed); border-color: transparent; }
+
+
+        /* Content Area & Animations */
+        .accordion-content {
+            padding: 0 25px; max-height: 0; overflow: hidden;
+            transition: max-height var(--anim-duration) var(--anim-easing),
+                        padding-top var(--anim-duration) var(--anim-easing),
+                        padding-bottom var(--anim-duration) var(--anim-easing);
+            box-sizing: border-box; position: relative; z-index: 1;
+        }
+        .accordion-item:not([data-state="collapsed"]) .accordion-content { padding-top: 20px; }
+        .content-inner {
+            padding-bottom: 25px; opacity: 0; transform: translateY(10px);
+            transition: opacity 0.4s ease-out 0.15s, transform 0.4s ease-out 0.15s;
+        }
+        .accordion-item:not([data-state="collapsed"]) .content-inner { opacity: 1; transform: translateY(0); }
+
+        /* Content Blocks Structure & Styling */
+        .question-block, .final-answer-block, .solution-block {
+            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);
+        }
+        .content-inner > div:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .question-block strong, .final-answer-block strong, .solution-block strong {
+            color: var(--accent-color); display: block; margin-bottom: 8px; font-size: 1.1em;
+        }
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; margin-bottom: 1em; }
+        li { margin-bottom: 8px; font-size: inherit; }
+
+        /* Simplified Styling for MathJax containers */
+    /* Final general rule */
+mjx-container {
+    margin: 0.5em 0;
+    text-align: left !important;
+    /* No display property specified here */
+    /* No overflow properties specified here */
+}
+        mjx-container[display="true"] {
+             margin: 1em 0 !important; /* Slightly more vertical space for display math */
+        }
+
+
+        /* General Utility Styles */
+        .hidden { display: none !important; }
+
+        /* Footer & Font Control */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both 0.7s; }
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: var(--accent-color); }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Tutorial 9</h1> <!-- UPDATED H1 -->
+    </header>
+
+    <div class="accordion">
+        <!-- Question 1 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q1: Triangle & Reverse Triangle Inequality</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Show that $||z| - |w|| \le |z - w| \le |z| + |w|$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>The inequalities $||z| - |w|| \le |z - w|$ (reverse triangle inequality) and $|z - w| \le |z| + |w|$ (triangle inequality) are proven using properties of complex numbers and moduli.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>We need to prove two inequalities:
+                            (i) $|z - w| \le |z| + |w|$ <br/>
+                            (ii) $||z| - |w|| \le |z - w|$
+                        </p>
+                        <p><strong>(i) Proof of $|z - w| \le |z| + |w|$</strong><br/>
+                            This is a direct application of the triangle inequality, which states that for any complex numbers $z_1$ and $z_2$, we have $|z_1 + z_2| \le |z_1| + |z_2|$.<br/>
+                            Let $z_1 = z$ and $z_2 = -w$. Applying the triangle inequality:
+                            $$|z + (-w)| \le |z| + |-w|$$
+                            $$|z - w| \le |z| + |w|$$
+                            (since $|-w| = |-1||w| = 1 \cdot |w| = |w|$) <br/>
+                            This proves the second part of the inequality.
+                        </p>
+                        <p><strong>(ii) Proof of $||z| - |w|| \le |z - w|$</strong><br/>
+                            This is known as the reverse triangle inequality.<br/>
+                            From the triangle inequality proven above, we have:
+                            $$|z| = |(z - w) + w| \le |z - w| + |w|$$
+                            Subtracting $|w|$ from both sides gives:
+                            $$|z| - |w| \le |z - w| \quad (1)$$
+                            Also, we can write:
+                            $$|w| = |(w - z) + z| \le |w - z| + |z|$$
+                            Since $|w - z| = |-(z - w)| = |-1||z - w| = |z - w|$, we have:
+                            $$|w| \le |z - w| + |z|$$
+                            Subtracting $|z|$ from both sides gives:
+                            $$|w| - |z| \le |z - w|$$
+                            Multiplying by -1 reverses the inequality sign:
+                            $$-(|w| - |z|) \ge -|z - w|$$
+                            $$|z| - |w| \ge -|z - w| \quad (2)$$
+                            Combining Equation (1) and Equation (2):<br/>
+                            We have $-|z - w| \le |z| - |w| \le |z - w|$.<br/>
+                            This is the definition of the absolute value, so we can write:
+                            $$||z| - |w|| \le |z - w|$$
+                        </p>
+                        <p>Combining both parts, we have shown that $||z| - |w|| \le |z - w| \le |z| + |w|$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q2: Generalized Triangle Inequality (Induction)</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Prove, by induction, that $|z_1 + z_2 + \dots + z_n| \le |z_1| + |z_2| + \dots + |z_n|$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>The generalized triangle inequality $|z_1 + \dots + z_n| \le |z_1| + \dots + |z_n|$ is proven for $n \ge 2$ using mathematical induction, based on the standard triangle inequality for $n=2$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>We want to prove the generalized triangle inequality using mathematical induction. Let $P(n)$ be the statement $|z_1 + z_2 + \dots + z_n| \le |z_1| + |z_2| + \dots + |z_n|$.</p>
+                        <p><strong>Base Case:</strong> For $n=2$, the statement is $P(2): |z_1 + z_2| \le |z_1| + |z_2|$. This is the standard triangle inequality for complex numbers, which we assume to be true. (The case $n=1$ is $|z_1| \le |z_1|$, which is trivial).</p>
+                        <p><strong>Inductive Hypothesis:</strong> Assume that $P(k)$ is true for some integer $k \ge 2$. That is, assume:
+                        $$|z_1 + z_2 + \dots + z_k| \le |z_1| + |z_2| + \dots + |z_k|$$</p>
+                        <p><strong>Inductive Step:</strong> We need to show that $P(k+1)$ is true, i.e.,
+                        $$|z_1 + z_2 + \dots + z_k + z_{k+1}| \le |z_1| + |z_2| + \dots + |z_k| + |z_{k+1}|$$</p>
+                        <p>Consider the left side of the inequality for $P(k+1)$:
+                        $|z_1 + z_2 + \dots + z_k + z_{k+1}|$ <br/>
+                        Group the first $k$ terms:
+                        $|(z_1 + z_2 + \dots + z_k) + z_{k+1}|$ <br/>
+                        Apply the base case triangle inequality ($|A + B| \le |A| + |B|$) with $A = z_1 + z_2 + \dots + z_k$ and $B = z_{k+1}$:
+                        $$|(z_1 + z_2 + \dots + z_k) + z_{k+1}| \le |z_1 + z_2 + \dots + z_k| + |z_{k+1}|$$
+                        Now, apply the inductive hypothesis $|z_1 + z_2 + \dots + z_k| \le |z_1| + |z_2| + \dots + |z_k|$ to the first term on the right side:
+                        $$|z_1 + z_2 + \dots + z_k| + |z_{k+1}| \le (|z_1| + |z_2| + \dots + |z_k|) + |z_{k+1}|$$
+                        Combining the steps:
+                        $$|z_1 + z_2 + \dots + z_k + z_{k+1}| \le |z_1| + |z_2| + \dots + |z_k| + |z_{k+1}|$$
+                        This is the statement $P(k+1)$.</p>
+                        <p><strong>Conclusion:</strong> Since the base case $P(2)$ is true and we have shown that $P(k)$ implies $P(k+1)$ for $k \ge 2$, by the principle of mathematical induction, the inequality $|z_1 + z_2 + \dots + z_n| \le |z_1| + |z_2| + \dots + |z_n|$ holds for all integers $n \ge 2$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q3: Sketching Subsets of $\mathbb{C}$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Sketch the following subsets of the complex plane: <br/>
+                        (a) $\{z : |z| < 1\}$ <br/>
+                        (b) $\{z : \text{Re}(z) < 1\}$ <br/>
+                        (c) $\{z : \text{Re}(z) = 1\}$ <br/>
+                        (d) $\{z : |z - 1| < |z + 1|\}$ <br/>
+                        (e) $\{z : 0 < |z - 1| < 2\}$ <br/>
+                        (f) $\{z : |2z + i| = 4\}$ <br/>
+                        (g) $\{z : |z - 4| \ge |z|\}$
+                        </p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>
+                        (a) Open disk, radius 1, center origin.<br/>
+                        (b) Open left half-plane $x < 1$.<br/>
+                        (c) Vertical line $x = 1$.<br/>
+                        (d) Open right half-plane $x > 0$.<br/>
+                        (e) Open disk, radius 2, center $z=1$, punctured at $z=1$.<br/>
+                        (f) Circle, radius 2, center $z=-i/2$.<br/>
+                        (g) Closed left half-plane $x \le 2$.
+                        </p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Let $z = x + iy$, where $x = \text{Re}(z)$ and $y = \text{Im}(z)$.</p>
+                        <p><strong>(a) $\{z : |z| < 1\}$</strong><br/>
+                            $|z| = \sqrt{x^2 + y^2}$. The condition is $\sqrt{x^2 + y^2} < 1$, or $x^2 + y^2 < 1^2$.<br/>
+                            This is the interior of the circle centered at the origin (0,0) with radius 1. The boundary is not included.<br/>
+                            <strong>Sketch description:</strong> An open disk centered at the origin with radius 1.
+                        </p>
+                        <p><strong>(b) $\{z : \text{Re}(z) < 1\}$</strong><br/>
+                            $\text{Re}(z) = x$. The condition is $x < 1$.<br/>
+                            This is the set of all points to the left of the vertical line $x=1$. The line $x=1$ is not included.<br/>
+                            <strong>Sketch description:</strong> The open left half-plane defined by $x < 1$.
+                        </p>
+                        <p><strong>(c) $\{z : \text{Re}(z) = 1\}$</strong><br/>
+                            $\text{Re}(z) = x$. The condition is $x = 1$.<br/>
+                            This is the set of all points on the vertical line $x=1$.<br/>
+                            <strong>Sketch description:</strong> The vertical line passing through the point (1,0).
+                        </p>
+                        <p><strong>(d) $\{z : |z - 1| < |z + 1|\}$</strong><br/>
+                            This condition means the distance from $z$ to 1 is less than the distance from $z$ to -1. This defines the open half-plane to the right of the perpendicular bisector of the segment from -1 to 1. The bisector is the imaginary axis ($x=0$).<br/>
+                            Algebraically: $|(x - 1) + iy| < |(x + 1) + iy|$
+                            $\implies \sqrt{(x - 1)^2 + y^2} < \sqrt{(x + 1)^2 + y^2}$
+                            $\implies (x - 1)^2 + y^2 < (x + 1)^2 + y^2$
+                            $\implies x^2 - 2x + 1 < x^2 + 2x + 1$
+                            $\implies -2x < 2x \implies 0 < 4x \implies x > 0$.<br/>
+                            This is $\text{Re}(z) > 0$.<br/>
+                            <strong>Sketch description:</strong> The open right half-plane defined by $x > 0$.
+                        </p>
+                        <p><strong>(e) $\{z : 0 < |z - 1| < 2\}$</strong><br/>
+                            $|z - 1|$ is the distance from $z$ to 1.<br/>
+                            $|z - 1| < 2$ means inside the circle of radius 2 centered at $z=1$.<br/>
+                            $|z - 1| > 0$ means $z \ne 1$.<br/>
+                            This is the set of points inside the circle of radius 2 centered at 1, excluding the center point $z=1$.<br/>
+                            <strong>Sketch description:</strong> An open disk centered at $z=1$ with radius 2, with the center point $z=1$ removed (a punctured disk).
+                        </p>
+                        <p><strong>(f) $\{z : |2z + i| = 4\}$</strong><br/>
+                            $|2z + i| = |2(z + i/2)| = 2 |z - (-i/2)|$.<br/>
+                            The equation is $2 |z - (-i/2)| = 4$, which simplifies to $|z - (-i/2)| = 2$.<br/>
+                            This is the set of points $z$ whose distance from $-i/2$ is exactly 2.<br/>
+                            <strong>Sketch description:</strong> A circle centered at $z_0 = -i/2$ (or $(0, -1/2)$) with radius $R=2$.
+                        </p>
+                         <p><strong>(g) $\{z : |z - 4| \ge |z|\}$</strong><br/>
+                            This condition means the distance from $z$ to 4 is greater than or equal to the distance from $z$ to 0. The boundary is the perpendicular bisector $x=2$. The region includes points closer to 0 or equidistant.<br/>
+                            Algebraically: $|(x - 4) + iy| \ge |x + iy|$
+                            $\implies \sqrt{(x - 4)^2 + y^2} \ge \sqrt{x^2 + y^2}$
+                            $\implies (x - 4)^2 + y^2 \ge x^2 + y^2$
+                            $\implies x^2 - 8x + 16 \ge x^2$
+                            $\implies -8x + 16 \ge 0 \implies 16 \ge 8x \implies 2 \ge x$.<br/>
+                            This is $\text{Re}(z) \le 2$.<br/>
+                            <strong>Sketch description:</strong> The closed left half-plane defined by $x \le 2$, including the boundary line $x=2$.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 4 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q4: Properties of Subsets from Q3</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>In the above question (Q3), which subsets are (a) Open (b) Connected (c) Closed (d) Domain (e) Bounded?</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>
+                        (a) {z : |z| < 1}: Open, Connected, Domain, Bounded.<br/>
+                        (b) {z : Re(z) < 1}: Open, Connected, Domain.<br/>
+                        (c) {z : Re(z) = 1}: Connected, Closed.<br/>
+                        (d) {z : Re(z) > 0}: Open, Connected, Domain.<br/>
+                        (e) {z : 0 < |z - 1| < 2}: Open, Connected, Domain, Bounded.<br/>
+                        (f) {z : |z - (-i/2)| = 2}: Connected, Closed, Bounded.<br/>
+                        (g) {z : Re(z) ≤ 2}: Connected, Closed.
+                        </p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <ul>
+                            <li><strong>Set (a) {z : |z| < 1}:</strong>
+                                <ul>
+                                    <li>(a) Open: Yes.</li><li>(b) Connected: Yes.</li><li>(c) Closed: No.</li><li>(d) Domain: Yes.</li><li>(e) Bounded: Yes.</li>
+                                </ul>
+                            </li>
+                             <li><strong>Set (b) {z : Re(z) < 1}:</strong>
+                                <ul>
+                                    <li>(a) Open: Yes.</li><li>(b) Connected: Yes.</li><li>(c) Closed: No.</li><li>(d) Domain: Yes.</li><li>(e) Bounded: No.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Set (c) {z : Re(z) = 1}:</strong>
+                                <ul>
+                                    <li>(a) Open: No.</li><li>(b) Connected: Yes.</li><li>(c) Closed: Yes.</li><li>(d) Domain: No.</li><li>(e) Bounded: No.</li>
+                                </ul>
+                            </li>
+                             <li><strong>Set (d) {z : |z - 1| < |z + 1|} (i.e., {z : Re(z) > 0}):</strong>
+                                <ul>
+                                    <li>(a) Open: Yes.</li><li>(b) Connected: Yes.</li><li>(c) Closed: No.</li><li>(d) Domain: Yes.</li><li>(e) Bounded: No.</li>
+                                </ul>
+                            </li>
+                             <li><strong>Set (e) {z : 0 < |z - 1| < 2}:</strong>
+                                <ul>
+                                    <li>(a) Open: Yes.</li><li>(b) Connected: Yes.</li><li>(c) Closed: No.</li><li>(d) Domain: Yes.</li><li>(e) Bounded: Yes.</li>
+                                </ul>
+                            </li>
+                             <li><strong>Set (f) {z : |2z + i| = 4} (i.e., {z : |z - (-i/2)| = 2}):</strong>
+                                <ul>
+                                    <li>(a) Open: No.</li><li>(b) Connected: Yes.</li><li>(c) Closed: Yes.</li><li>(d) Domain: No.</li><li>(e) Bounded: Yes.</li>
+                                </ul>
+                            </li>
+                             <li><strong>Set (g) {z : |z - 4| ≥ |z|} (i.e., {z : Re(z) ≤ 2}):</strong>
+                                <ul>
+                                    <li>(a) Open: No.</li><li>(b) Connected: Yes.</li><li>(c) Closed: Yes.</li><li>(d) Domain: No.</li><li>(e) Bounded: No.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 5 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q5: Alternative Equation of a Circle</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Show that the equation $|z - z_0| = R$ of a circle, centered at $z_0$ with radius R, can be written as $|z|^2 - 2 \text{Re} (z\bar{z_0}) + |z_0|^2 = R^2$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>By squaring $|z - z_0| = R$ and using properties $|w|^2 = w\bar{w}$ and $w + \bar{w} = 2\text{Re}(w)$, the equivalent form $|z|^2 - 2 \text{Re} (z\bar{z_0}) + |z_0|^2 = R^2$ is derived.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Start with the equation of the circle:
+                            $$|z - z_0| = R$$
+                        Since both sides are non-negative, we can square both sides:
+                            $$|z - z_0|^2 = R^2$$
+                        Use the property that for any complex number $w$, $|w|^2 = w\bar{w}$. Let $w = z - z_0$.
+                            $$(z - z_0)(\overline{z - z_0}) = R^2$$
+                        Using properties of conjugates, $\overline{z - z_0} = \bar{z} - \bar{z_0}$.
+                            $$(z - z_0)(\bar{z} - \bar{z_0}) = R^2$$
+                        Expand the product on the left side:
+                            $$z\bar{z} - z\bar{z_0} - z_0\bar{z} + z_0\bar{z_0} = R^2$$
+                        Recall that $|z|^2 = z\bar{z}$ and $|z_0|^2 = z_0\bar{z_0}$. Substitute these into the equation:
+                            $$|z|^2 - z\bar{z_0} - z_0\bar{z} + |z_0|^2 = R^2$$
+                        Now consider the middle terms: $- z\bar{z_0} - z_0\bar{z}$.<br/>
+                        Notice that $z_0\bar{z} = \overline{z\bar{z_0}}$.<br/>
+                        So, the terms are $-(z\bar{z_0} + \overline{z\bar{z_0}})$.<br/>
+                        Recall the property that for any complex number $w$, $w + \bar{w} = 2 \text{Re}(w)$. Let $w = z\bar{z_0}$.<br/>
+                        Therefore, $z\bar{z_0} + \overline{z\bar{z_0}} = 2 \text{Re}(z\bar{z_0})$.<br/>
+                        Substitute this back into the equation:
+                            $$|z|^2 - 2 \text{Re}(z\bar{z_0}) + |z_0|^2 = R^2$$
+                        This is the desired form.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 6 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q6: Principal Argument of $(\sqrt{3} - i)^6$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find the principle argument of $z = (\sqrt{3} - i)^6$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>The principal argument is $\text{Arg}(z) = \pi$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>First, let's find the polar form of the complex number $w = \sqrt{3} - i$.<br/>
+                        The modulus is $r = |w| = \sqrt{(\sqrt{3})^2 + (-1)^2} = \sqrt{3 + 1} = \sqrt{4} = 2$.<br/>
+                        To find the argument $\theta = \arg(w)$, we look for $\theta$ such that $\cos \theta = \frac{\sqrt{3}}{2}$ and $\sin \theta = \frac{-1}{2}$.<br/>
+                        The angle lies in the fourth quadrant. The principal value $\text{Arg}(w)$ is $\theta = -\frac{\pi}{6}$.<br/>
+                        So, $w = 2 (\cos(-\pi/6) + i\sin(-\pi/6)) = 2e^{-i\pi/6}$.</p>
+                        <p>Now, we need to compute $z = w^6$:
+                            $$z = (2e^{-i\pi/6})^6$$
+                        Using De Moivre's Theorem $(re^{i\theta})^n = r^n e^{in\theta}$:
+                            $$z = 2^6 e^{i(-\pi/6 \times 6)}$$
+                            $$z = 64 e^{-i\pi}$$
+                        The complex number $z$ is $64(\cos(-\pi) + i\sin(-\pi)) = 64(-1 + i(0)) = -64$.<br/>
+                        The principal argument, denoted $\text{Arg}(z)$, is the unique argument $\theta$ such that $-\pi < \theta \le \pi$.<br/>
+                        For $z = -64$, the point lies on the negative real axis. The angle measured counterclockwise from the positive real axis is $\pi$.<br/>
+                        Since $\pi$ is in the interval $(-\pi, \pi]$, the principal argument is $\pi$.
+                        $$\text{Arg}((\sqrt{3} - i)^6) = \pi$$
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 7 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q7: Cube Roots of $-8i$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find all the values of $(-8i)^{1/3}$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>The three cube roots are $\sqrt{3} - i$, $2i$, and $-\sqrt{3} - i$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>We want to find the cube roots of the complex number $z = -8i$.<br/>
+                        First, write $z$ in polar form $z = re^{i\theta}$.<br/>
+                        The modulus is $r = |-8i| = \sqrt{0^2 + (-8)^2} = \sqrt{64} = 8$.<br/>
+                        The argument $\theta$ corresponds to the point $(0, -8)$, which lies on the negative imaginary axis. The principal argument is $\text{Arg}(z) = -\frac{\pi}{2}$.<br/>
+                        So, the polar form is $z = 8e^{-i\pi/2}$.<br/>
+                        More generally, we can write $z = 8e^{i(-\pi/2 + 2k\pi)}$ for any integer $k$.</p>
+                        <p>We are looking for values $w$ such that $w^3 = z$. Let $w = \rho e^{i\phi}$. Then $w^3 = \rho^3 e^{i3\phi}$.
+                            $$\rho^3 e^{i3\phi} = 8e^{i(-\pi/2 + 2k\pi)}$$
+                        Equating the moduli: $\rho^3 = 8 \implies \rho = \sqrt[3]{8} = 2$.<br/>
+                        Equating the arguments: $3\phi = -\frac{\pi}{2} + 2k\pi$
+                            $$\phi = \frac{-\pi/2 + 2k\pi}{3} = -\frac{\pi}{6} + \frac{2k\pi}{3}$$
+                        We find distinct roots by taking $k = 0, 1, 2$.</p>
+                        <p>For $k=0$:<br/>
+                            $\phi_0 = -\frac{\pi}{6}$.<br/>
+                            $w_0 = 2e^{i(-\pi/6)} = 2(\cos(-\pi/6) + i\sin(-\pi/6)) = 2(\frac{\sqrt{3}}{2} - i\frac{1}{2}) = \sqrt{3} - i$.</p>
+                        <p>For $k=1$:<br/>
+                            $\phi_1 = -\frac{\pi}{6} + \frac{2\pi}{3} = -\frac{\pi}{6} + \frac{4\pi}{6} = \frac{3\pi}{6} = \frac{\pi}{2}$.<br/>
+                            $w_1 = 2e^{i(\pi/2)} = 2(\cos(\pi/2) + i\sin(\pi/2)) = 2(0 + i(1)) = 2i$.</p>
+                        <p>For $k=2$:<br/>
+                            $\phi_2 = -\frac{\pi}{6} + \frac{4\pi}{3} = -\frac{\pi}{6} + \frac{8\pi}{6} = \frac{7\pi}{6}$.<br/>
+                            $w_2 = 2e^{i(7\pi/6)} = 2(\cos(7\pi/6) + i\sin(7\pi/6)) = 2(-\frac{\sqrt{3}}{2} - i\frac{1}{2}) = -\sqrt{3} - i$.</p>
+                        <p>The three cube roots of $-8i$ are $\sqrt{3} - i$, $2i$, and $-\sqrt{3} - i$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 8 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q8: Accumulation Points of Sets</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Determine the accumulation points for each of the following sets:<br/>
+                        (a) $z_n = i^n, n = 1, 2, 3, \dots$<br/>
+                        (b) $z_n = i^n/n, n = 1, 2, 3, \dots$<br/>
+                        (c) $S = \{z : 0 \le \text{Arg}(z) < \pi/2, z \ne 0\}$<br/>
+                        (d) $z_n = (-1)^n (1 + i) \frac{n-1}{n}, n = 1, 2, 3, \dots$
+                        </p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>
+                        (a) None.<br/>
+                        (b) $\{0\}$.<br/>
+                        (c) $\{z : 0 \le \text{Arg}(z) \le \pi/2\}$ (the closed first quadrant).<br/>
+                        (d) $\{1+i, -1-i\}$.
+                        </p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>An accumulation point (or limit point) $p$ of a set $S$ is a point such that every neighborhood of $p$ contains at least one point of $S$ distinct from $p$.</p>
+                        <p><strong>(a) $z_n = i^n, n = 1, 2, 3, \dots$</strong><br/>
+                            The set of values is $S = \{i, -1, -i, 1\}$.<br/>
+                            This is a finite set. A finite set has no accumulation points because for any point $p$, we can find a small enough neighborhood around $p$ that contains no *other* point from the set.<br/>
+                            <strong>Accumulation points: None.</strong></p>
+                        <p><strong>(b) $z_n = i^n/n, n = 1, 2, 3, \dots$</strong><br/>
+                            The set of values is $S = \{i/1, -1/2, -i/3, 1/4, \dots\}$.<br/>
+                            Consider the modulus $|z_n| = |i^n/n| = 1/n$. As $n \to \infty$, $|z_n| \to 0$. The sequence converges to 0.<br/>
+                            Any neighborhood $B(0, \epsilon)$ contains points $z_n$ for $n > 1/\epsilon$. Since $z_n \ne 0$, 0 is an accumulation point.<br/>
+                            Since the sequence converges to 0, no other point $p \ne 0$ can be an accumulation point.<br/>
+                            <strong>Accumulation points: $\{0\}$.</strong></p>
+                        <p><strong>(c) $S = \{z : 0 \le \text{Arg}(z) < \pi/2, z \ne 0\}$</strong><br/>
+                            This set is the first quadrant, excluding the origin and the positive imaginary axis, but including the positive real axis.<br/>
+                            Any point $p$ in $S$ is an accumulation point. <br/>
+                            The origin $p=0$ is an accumulation point since any $B(0, \epsilon)$ contains points like $\epsilon/2 \in S$.<br/>
+                            Any point $p=iy$ on the positive imaginary axis ($y>0$) is an accumulation point since any $B(p, \epsilon)$ contains points like $\delta + iy \in S$ for small $\delta > 0$.<br/>
+                            The set of accumulation points is the closure of $S$, which is the closed first quadrant.<br/>
+                            <strong>Accumulation points: $\{z : 0 \le \text{Arg}(z) \le \pi/2\}$.</strong></p>
+                        <p><strong>(d) $z_n = (-1)^n (1 + i) \frac{n-1}{n}, n = 1, 2, 3, \dots$</strong><br/>
+                            Let $w = 1+i$. $z_n = (-1)^n w (1 - 1/n)$.<br/>
+                            Subsequence for even $n=2k$: $z_{2k} = w(1 - 1/(2k)) \to w = 1+i$ as $k \to \infty$.<br/>
+                            Subsequence for odd $n=2k+1$: $z_{2k+1} = -w(1 - 1/(2k+1)) \to -w = -1-i$ as $k \to \infty$.<br/>
+                            The limits of the convergent subsequences are the accumulation points.<br/>
+                            <strong>Accumulation points: $\{1+i, -1-i\}$.</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 9 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q9: Points in a Domain are Accumulation Points</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Show that any point $z_0$ of a domain is an accumulation point of that domain.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>Since a domain $D$ is open, for any $z_0 \in D$, any neighborhood $N$ of $z_0$ contains an open disk $B(z_0, r) \subseteq D$. We can always find a point $z_1 = z_0 + r/2$ within this disk ($z_1 \in D, z_1 \in N$) such that $z_1 \ne z_0$. Thus $z_0$ is an accumulation point.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Let $D$ be a domain in the complex plane. By definition, a domain is a non-empty, open, and connected set.<br/>
+                        Let $z_0$ be an arbitrary point in $D$ ($z_0 \in D$).<br/>
+                        We want to show that $z_0$ is an accumulation point of $D$. This means we need to show that every neighborhood of $z_0$ contains at least one point of $D$ that is different from $z_0$.</p>
+                        <p>Let $N$ be any neighborhood of $z_0$. By the definition of a neighborhood, there exists an open disk centered at $z_0$ with some radius $\delta > 0$, denoted $B(z_0, \delta) = \{z \in \mathbb{C} : |z - z_0| < \delta\}$, such that $B(z_0, \delta) \subseteq N$.</p>
+                        <p>Since $D$ is a domain, it is an open set. Because $z_0 \in D$ and $D$ is open, there exists an open disk centered at $z_0$ with some radius $\epsilon > 0$, denoted $B(z_0, \epsilon) = \{z \in \mathbb{C} : |z - z_0| < \epsilon\}$, such that $B(z_0, \epsilon) \subseteq D$.</p>
+                        <p>Now consider the radius $r = \min(\delta, \epsilon)$. Since both $\delta > 0$ and $\epsilon > 0$, we have $r > 0$.<br/>
+                        The open disk $B(z_0, r)$ is contained within both $N$ (since $r \le \delta$) and $D$ (since $r \le \epsilon$).<br/>
+                        So, $B(z_0, r) \subseteq N$ and $B(z_0, r) \subseteq D$.</p>
+                        <p>Consider the point $z_1 = z_0 + \frac{r}{2}$.<br/>
+                        The distance from $z_1$ to $z_0$ is $|z_1 - z_0| = |(z_0 + r/2) - z_0| = |r/2| = r/2$.<br/>
+                        Since $r > 0$, we have $0 < r/2 < r$.<br/>
+                        Therefore, $z_1$ is in the open disk $B(z_0, r)$.<br/>
+                        Since $B(z_0, r) \subseteq D$, we have $z_1 \in D$.<br/>
+                        Since $B(z_0, r) \subseteq N$, we have $z_1 \in N$.<br/>
+                        Also, since $r/2 \ne 0$, the point $z_1 = z_0 + r/2$ is different from $z_0$.</p>
+                        <p>So, for any neighborhood $N$ of $z_0$, we have found a point $z_1 \in N$ such that $z_1 \in D$ and $z_1 \ne z_0$.<br/>
+                        By definition, this means $z_0$ is an accumulation point of $D$.<br/>
+                        Since $z_0$ was an arbitrary point in $D$, every point of a domain is an accumulation point of that domain.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 10 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q10: Finite Sets Have No Accumulation Points</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Prove that a finite set cannot have any accumulation points.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>For any point $p$ (either in the finite set $S$ or not), the minimum distance $d$ to other points in $S$ (or all points if $p \notin S$) is positive. The neighborhood $B(p, d)$ contains no point of $S$ different from $p$, so $p$ cannot be an accumulation point.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Let $S = \{z_1, z_2, \dots, z_n\}$ be a finite set in the complex plane, where $n$ is a finite non-negative integer.<br/>
+                        We want to show that no point $p \in \mathbb{C}$ can be an accumulation point of $S$.<br/>
+                        Recall that $p$ is an accumulation point of $S$ if every neighborhood of $p$ contains at least one point of $S$ *different from* $p$.</p>
+                        <p>We consider two cases for an arbitrary point $p \in \mathbb{C}$:</p>
+                        <p><strong>Case 1: $p$ is one of the points in the set $S$.</strong><br/>
+                        Suppose $p = z_k$ for some $k \in \{1, 2, \dots, n\}$.<br/>
+                        Consider the distances between $p$ and all *other* points in $S$: $d_j = |p - z_j|$ for $j \in \{1, \dots, n\}$ and $j \ne k$.<br/>
+                        If $n \le 1$, there are no other points, so any neighborhood $B(p, \epsilon)$ contains no points of $S$ other than $p$. Thus, $p$ is not an accumulation point.<br/>
+                        If $n > 1$, since all $z_j$ are distinct for $j \ne k$, all $d_j > 0$.<br/>
+                        Let $d = \min \{d_j : j \ne k\}$. Since this is a minimum of a finite set of positive numbers, $d > 0$.<br/>
+                        Now consider the open disk (neighborhood) $N = B(p, d) = \{z \in \mathbb{C} : |z - p| < d\}$.<br/>
+                        This neighborhood $N$ contains $p$.<br/>
+                        For any $z_j \in S$ with $j \ne k$, we have $|z_j - p| = d_j \ge d$. Thus, $z_j \notin N$.<br/>
+                        The neighborhood $N = B(p, d)$ contains no point of $S$ other than $p$ itself.<br/>
+                        Therefore, $p$ is not an accumulation point of $S$.</p>
+                        <p><strong>Case 2: $p$ is not a point in the set $S$.</strong><br/>
+                        Suppose $p \notin S$.<br/>
+                        Consider the distances between $p$ and *all* points in $S$: $d_j = |p - z_j|$ for $j \in \{1, 2, \dots, n\}$.<br/>
+                        Since $p \notin S$, $p \ne z_j$ for all $j$, so all $d_j > 0$. (If $n=0$, $S$ is empty, trivially no accumulation points).<br/>
+                        Let $d' = \min \{d_j : j = 1, \dots, n\}$. Since this is a minimum of a finite set of positive numbers, $d' > 0$.<br/>
+                        Now consider the open disk (neighborhood) $N' = B(p, d') = \{z \in \mathbb{C} : |z - p| < d'\}$.<br/>
+                        For any $z_j \in S$, we have $|z_j - p| = d_j \ge d'$. Thus, $z_j \notin N'$.<br/>
+                        The neighborhood $N' = B(p, d')$ contains no points from $S$ at all.<br/>
+                        Therefore, $p$ cannot be an accumulation point of $S$.</p>
+                        <p><strong>Conclusion:</strong> In both cases, any point $p \in \mathbb{C}$ is not an accumulation point of the finite set $S$. Therefore, a finite set has no accumulation points.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- End Accordion Container -->
+
+
+    <footer> <!-- Optional Footer --> </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div>
+
+    <script>
+        // --- Debounce Function ---
+        function debounce(func, wait) { let timeout; return function(...args) { const later = () => { clearTimeout(timeout); func.apply(this, args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body;
+
+            // --- Font Size Control & Hold ---
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            let currentSize = 10; const minSize = 10; const maxSize = 28; const step = 1;
+            let displayTimeout = null; let holdTimeout = null; let holdInterval = null;
+            const initialHoldDelay = 400; const repeatInterval = 100;
+            const mathJaxDebounceDelay = 350;
+
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax for body");
+                    MathJax.typesetPromise([bodyEl]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            const handleFontResizeEnd = debounce(() => {
+                console.log("Font resize finished.");
+                queueMathJaxTypeset();
+            }, mathJaxDebounceDelay);
+
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px'; display.classList.add('visible');
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => { display.classList.remove('visible'); displayTimeout = null; }, 1500);
+                    handleFontResizeEnd(); return true;
+                } return false;
+            }
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition');
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                // We need to trigger MathJax typesetting *after* the final font size is set and holding stops.
+                // handleFontResizeEnd() now calls queueMathJaxTypeset.
+                // queueMathJaxTypeset(); // Removed as handleFontResizeEnd calls it
+            }
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); updateFontSize(currentSize + direction * step);
+                if (holdTimeout) clearTimeout(holdTimeout); if (holdInterval) clearInterval(holdInterval);
+                holdTimeout = setTimeout(() => { holdInterval = setInterval(() => { if (!updateFontSize(currentSize + direction * step)) { stopHolding(); } }, repeatInterval); }, initialHoldDelay);
+            }
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                window.addEventListener('mouseup', stopHolding);
+                minusBtn.addEventListener('mouseleave', stopHolding); plusBtn.addEventListener('mouseleave', stopHolding);
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px'); display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+            } else { console.error("Font control elements not found!"); }
+
+
+             // --- Accordion Logic (with State Indicator & MathJax Trigger - Robust Measurement) ---
+             const accordionItems = document.querySelectorAll('.accordion-item');
+             accordionItems.forEach(item => {
+                 const header = item.querySelector('.accordion-header');
+                 const content = item.querySelector('.accordion-content');
+                 const innerContent = content.querySelector('.content-inner');
+                 const finalAnswerBlock = innerContent.querySelector('.final-answer-block');
+                 const solutionBlock = innerContent.querySelector('.solution-block');
+
+                 header.addEventListener('click', () => {
+                     const currentState = item.getAttribute('data-state');
+                     let nextState;
+
+                     if (currentState === 'collapsed') {
+                         if (!item.classList.contains('visited')) { item.classList.add('visited'); }
+                         nextState = 'state1'; // Show Final Answer
+                     } else if (currentState === 'state1') {
+                         nextState = 'state2'; // Show Full Solution
+                     } else { // state2
+                         nextState = 'collapsed'; // Collapse
+                     }
+
+                     item.setAttribute('data-state', nextState);
+                     console.log(`Item state changed to: ${nextState}`);
+
+                     const isCollapsed = nextState === 'collapsed';
+                     const showAnswer = nextState === 'state1';
+                     const showSolution = nextState === 'state2';
+
+                     // Determine which block(s) should be visible based on the *next* state
+                     if (finalAnswerBlock) finalAnswerBlock.classList.toggle('hidden', !(showAnswer || showSolution)); // Show answer if state is 1 or 2
+                     if (solutionBlock) solutionBlock.classList.toggle('hidden', !showSolution); // Show solution only if state is 2
+
+                     // --- Expansion/Collapse Logic ---
+                     if (!isCollapsed) {
+                         // --- EXPANDING ---
+                         let mathJaxPromise = Promise.resolve();
+                         if (window.MathJax && MathJax.typesetPromise) {
+                             // Only typeset newly revealed content if needed
+                             const elementToTypeset = (nextState === 'state1' && finalAnswerBlock) ? finalAnswerBlock :
+                                                      (nextState === 'state2' && solutionBlock) ? solutionBlock : null;
+
+                             if(elementToTypeset && !elementToTypeset.dataset.mathjaxTypeset) { // Only typeset if not already done
+                                 console.log(`Queueing MathJax for newly visible block in: ${header.querySelector('h2').textContent.trim()}`);
+                                 mathJaxPromise = MathJax.typesetPromise([elementToTypeset]).then(() => {
+                                     elementToTypeset.dataset.mathjaxTypeset = 'true'; // Mark as typeset
+                                 }).catch(err => {
+                                     console.error('MathJax typesetting error during expand:', err);
+                                 });
+                             } else {
+                                console.log("Content already typeset or no specific block to typeset.");
+                             }
+
+                         } else { console.warn("MathJax not available for typesetting during expand."); }
+
+                         mathJaxPromise.then(() => {
+                            // Recalculate height *after* MathJax (if it ran) and content visibility is updated
+                             requestAnimationFrame(() => {
+                                 requestAnimationFrame(() => { // Double rAF
+                                    content.style.maxHeight = 'none'; // Remove previous limit to measure full height
+                                    const currentHeight = content.scrollHeight; // Measure height including padding
+                                    console.log(`Measured scrollHeight after MathJax & rAF: ${currentHeight}px`);
+
+                                    if (currentHeight <= 0 && !isCollapsed) {
+                                         console.warn("Scroll height is zero! Check content visibility/rendering.");
+                                     }
+                                     content.style.maxHeight = '0px'; // Set to 0 to start transition from collapsed state
+                                     requestAnimationFrame(() => { // Apply final height in next frame
+                                         content.style.maxHeight = currentHeight + 'px';
+                                         console.log(`Applied maxHeight: ${currentHeight}px`);
+                                     });
+                                 });
+                             });
+                         });
+
+                     } else {
+                         // --- COLLAPSING ---
+                         if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                             content.style.maxHeight = '0px';
+                             console.log("Collapsing: Set maxHeight to 0px");
+                             // Optional: Reset MathJax typesetting status if desired on collapse
+                             // if (finalAnswerBlock) delete finalAnswerBlock.dataset.mathjaxTypeset;
+                             // if (solutionBlock) delete solutionBlock.dataset.mathjaxTypeset;
+                         }
+                     }
+                 });
+             });
+             console.log("Accordion logic (Robust Measurement) with state indicators and MathJax applied.");
+
+            // --- Initial MathJax Typeset on Load ---
+             if (window.MathJax) {
+                 MathJax.startup.promise.then(() => {
+                     console.log("Queueing initial MathJax typeset after load");
+                     // Only typeset the initially visible question blocks
+                     const questionBlocks = document.querySelectorAll('.question-block');
+                     MathJax.typesetPromise(Array.from(questionBlocks)).catch((err) => console.error('MathJax initial typesetting error:', err));
+                 });
+             }
+
+        }); // End DOMContentLoaded
+    </script>
+
+</body>
+</html>

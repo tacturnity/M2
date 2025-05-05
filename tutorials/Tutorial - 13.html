@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 13</title> <!-- UPDATED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true, tags: 'ams' },
+          options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'], ignoreHtmlClass: 'tex2jax_ignore', processHtmlClass: 'tex2jax_process' },
+          svg: { fontCache: 'global' },
+          startup: { ready: () => { console.log('MathJax ready.'); MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => console.log('MathJax initial typeset complete.')); } }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Base Styles --- */
+        :root {
+            --accent-color: #F08080; /* Light Coral */
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --border-color: #555;
+            --header-bg: #2f2f2f;
+            --header-hover-bg: #3f3f3f;
+            --content-bg: #282828;
+            /* Indicator Colors */
+            --indicator-unvisited: transparent;
+            --indicator-answer: #f7dc6f;
+            --indicator-solution: #58d68d;
+            --indicator-visited-closed: var(--indicator-solution);
+            --anim-duration: 0.5s;
+            --anim-easing: cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace; color: var(--text-color); line-height: 1.7;
+            padding: 25px; background-color: var(--bg-color); min-height: 100vh;
+            font-size: var(--base-font-size); transition: font-size 0.2s ease-in-out;
+            padding-bottom: 80px; overflow-x: hidden;
+        }
+        body.no-font-transition { transition: none !important; }
+
+        /* Headings */
+        h1 {
+            font-size: 2.4em; color: var(--accent-color); font-weight: 700; padding-bottom: 12px;
+            margin: 1.5em auto; border-bottom: 3px solid var(--accent-color);
+            animation: fadeIn 0.8s ease-out both 0.1s; letter-spacing: -0.5px; text-align: center; max-width: 800px;
+        }
+
+        /* --- Accordion Styles --- */
+        .accordion { max-width: 900px; margin: 20px auto; }
+        .accordion-item {
+            border: 1px solid var(--border-color); border-radius: 8px;
+            overflow: hidden; margin-bottom: 25px; background-color: var(--content-bg);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .accordion-item:hover { border-color: #777; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4); }
+        .accordion-header {
+            background-color: var(--header-bg); padding: 18px 25px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background-color 0.3s ease, border-bottom-color var(--anim-duration) var(--anim-easing); /* Updated */
+            border-bottom: 1px solid var(--border-color); position: relative; z-index: 2;
+        }
+        .accordion-item[data-state="collapsed"] .accordion-header { border-bottom-color: transparent; }
+        .accordion-header:hover { background-color: var(--header-hover-bg); }
+        .accordion-header h2 { margin: 0; font-size: 1.2em; color: var(--text-color); text-align: left; padding-right: 10px;} /* Added padding */
+
+        /* --- State Indicator --- */
+        .state-indicator {
+            width: 12px; height: 12px; border-radius: 50%;
+            background-color: var(--indicator-unvisited); display: inline-block; margin-left: 15px;
+            flex-shrink: 0; transition: background-color 0.3s ease; border: 1px solid var(--header-bg);
+        }
+        .accordion-item[data-state="state1"] .state-indicator { background-color: var(--indicator-answer); border-color: transparent; }
+        .accordion-item[data-state="state2"] .state-indicator { background-color: var(--indicator-solution); border-color: transparent; }
+        .accordion-item.visited[data-state="collapsed"] .state-indicator { background-color: var(--indicator-visited-closed); border-color: transparent; }
+
+
+        /* Content Area & Animations */
+        .accordion-content {
+            padding: 0 25px; max-height: 0; overflow: hidden;
+            transition: max-height var(--anim-duration) var(--anim-easing),
+                        padding-top var(--anim-duration) var(--anim-easing),
+                        padding-bottom var(--anim-duration) var(--anim-easing);
+            box-sizing: border-box; position: relative; z-index: 1;
+        }
+        .accordion-item:not([data-state="collapsed"]) .accordion-content { padding-top: 20px; }
+        .content-inner {
+            padding-bottom: 25px; opacity: 0; transform: translateY(10px);
+            transition: opacity 0.4s ease-out 0.15s, transform 0.4s ease-out 0.15s;
+        }
+        .accordion-item:not([data-state="collapsed"]) .content-inner { opacity: 1; transform: translateY(0); }
+
+        /* Content Blocks Structure & Styling */
+        .question-block, .final-answer-block, .solution-block {
+            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);
+        }
+        .content-inner > div:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .question-block strong, .final-answer-block strong, .solution-block strong {
+            color: var(--accent-color); display: block; margin-bottom: 8px; font-size: 1.1em;
+        }
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; margin-bottom: 1em; }
+        li { margin-bottom: 8px; font-size: inherit; }
+
+        /* --- UPDATED Styling for MathJax containers --- */
+        mjx-container {
+            margin: 0.2em 0; /* Reduced vertical space around inline math */
+            text-align: left !important; /* Ensure left alignment */
+            /* Removed display: block; */
+            /* Removed overflow settings here */
+             /* Allow MathJax to handle default display (inline-block) */
+        }
+        mjx-container[display="true"] {
+             margin: 1em 0 !important; /* Restore slightly more vertical space for display math */
+             display: block;           /* Explicitly make display math block-level */
+             overflow-x: auto;       /* Apply overflow only to display math */
+             overflow-y: hidden;
+        }
+        /* Optional: Style scrollbar for display math containers */
+        mjx-container[display="true"]::-webkit-scrollbar { height: 6px; }
+        mjx-container[display="true"]::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.3); border-radius: 3px; }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb { background-color: #666; border-radius: 3px; }
+        mjx-container[display="true"]::-webkit-scrollbar-thumb:hover { background-color: #888; }
+
+
+        /* General Utility Styles */
+        .hidden { display: none !important; }
+
+        /* Footer & Font Control */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both 0.7s; }
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: var(--accent-color); }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Tutorial 13</h1> <!-- UPDATED H1 -->
+    </header>
+
+    <div class="accordion">
+        <!-- Question 1 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q1: Roots of Complex Numbers</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find the following:</p>
+                        <p>(a) Square Root of $4 + 3i$.</p>
+                        <p>(b) Cube Root of $2 + 3i$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $\pm \frac{3+i}{\sqrt{2}}$ or $\pm (\frac{3\sqrt{2}}{2} + i \frac{\sqrt{2}}{2})$.</p>
+                        <p>(b) $13^{1/6} e^{i(\arctan(3/2) + 2k\pi)/3}$ for $k=0, 1, 2$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p><strong>(a) Square Root of $4 + 3i$.</strong><br/>
+                        Let $w = a + ib$ such that $w^2 = 4+3i$.<br/>
+                        $(a^2 - b^2) + i(2ab) = 4+3i$.<br/>
+                        Equating real and imaginary parts: $a^2 - b^2 = 4$ (1) and $2ab = 3$ (2).<br/>
+                        Equating moduli squared: $|w|^2 = |4+3i| \implies a^2 + b^2 = \sqrt{4^2+3^2} = 5$ (3).<br/>
+                        Add (1) and (3): $2a^2 = 9 \implies a^2 = 9/2 \implies a = \pm 3/\sqrt{2}$.<br/>
+                        Subtract (1) from (3): $2b^2 = 1 \implies b^2 = 1/2 \implies b = \pm 1/\sqrt{2}$.<br/>
+                        From (2), $ab = 3/2 > 0$, so $a$ and $b$ have the same sign.<br/>
+                        The square roots are $\frac{3}{\sqrt{2}} + i \frac{1}{\sqrt{2}}$ and $-\frac{3}{\sqrt{2}} - i \frac{1}{\sqrt{2}}$.
+                        </p>
+                        <p><strong>(b) Cube Root of $2 + 3i$.</strong><br/>
+                        Let $z = 2+3i$. Find polar form $z=re^{i\theta}$.<br/>
+                        $r = |z| = \sqrt{2^2+3^2} = \sqrt{13}$.<br/>
+                        $\theta = \text{Arg}(z) = \arctan(3/2)$ (since $z$ is in the first quadrant).<br/>
+                        So $z = \sqrt{13} e^{i \arctan(3/2)}$.<br/>
+                        The cube roots $w_k$ are given by $w_k = r^{1/3} e^{i(\theta+2k\pi)/3}$ for $k=0,1,2$.
+                        $$ w_k = (\sqrt{13})^{1/3} e^{i(\arctan(3/2) + 2k\pi)/3} = 13^{1/6} e^{i(\arctan(3/2) + 2k\pi)/3} $$
+                        The three roots are:<br/>
+                        $k=0: w_0 = 13^{1/6} e^{i(\arctan(3/2))/3}$<br/>
+                        $k=1: w_1 = 13^{1/6} e^{i(\arctan(3/2) + 2\pi)/3}$<br/>
+                        $k=2: w_2 = 13^{1/6} e^{i(\arctan(3/2) + 4\pi)/3}$
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q2: Principal Values of Powers</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Calculate the principal values of $i^i$ and $\pi^i$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>$i^i = e^{-\pi/2}$</p>
+                        <p>$\pi^i = e^{i \ln \pi} = \cos(\ln \pi) + i \sin(\ln \pi)$</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>The principal value of $z^c$ is $e^{c \text{Log}(z)}$, where Log$(z) = \ln|z| + i\text{Arg}(z)$, $-\pi < \text{Arg}(z) \le \pi$.</p>
+                        <p><strong>Principal value of $i^i$</strong>:<br/>
+                        $z=i$, $c=i$. $|z|=1$. Arg$(z)=\pi/2$.<br/>
+                        Log$(i) = \ln(1) + i(\pi/2) = i\pi/2$.<br/>
+                        $i^i = e^{i \text{Log}(i)} = e^{i(i\pi/2)} = e^{-\pi/2}$.</p>
+                        <p><strong>Principal value of $\pi^i$</strong>:<br/>
+                        $z=\pi$, $c=i$. $|z|=\pi$. Arg$(z)=0$.<br/>
+                        Log$(\pi) = \ln(\pi) + i(0) = \ln(\pi)$.<br/>
+                        $\pi^i = e^{i \text{Log}(\pi)} = e^{i \ln(\pi)} = \cos(\ln \pi) + i \sin(\ln \pi)$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q3: Region of Analyticity</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find the region where the function $f(z) = \frac{\text{Log}(z+4)}{z^2+i}$ is analytic.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>The function is analytic in $\mathbb{C} \setminus \left( (-\infty, -4] \cup \left\{ \frac{1-i}{\sqrt{2}}, \frac{-1+i}{\sqrt{2}} \right\} \right)$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>The function $f(z)$ is analytic where the numerator and denominator are analytic and the denominator is non-zero.</p>
+                        <p>1. Numerator $g(z) = \text{Log}(z+4)$: The principal logarithm Log$(w)$ is analytic except for $w \le 0$. Let $w = z+4$. The numerator is analytic except when $z+4 \le 0$, which means $z \le -4$. So, the numerator is analytic for $z \notin (-\infty, -4]$.</p>
+                        <p>2. Denominator $h(z) = z^2+i$: This is a polynomial, analytic everywhere.</p>
+                        <p>3. Denominator zero: $z^2+i = 0 \implies z^2 = -i$.<br/>
+                        Write $-i$ in polar form: $e^{-i\pi/2}$.<br/>
+                        $z^2 = e^{i(-\pi/2 + 2k\pi)}$.<br/>
+                        $z = e^{i(-\pi/2 + 2k\pi)/2}$ for $k=0, 1$.<br/>
+                        $k=0: z_0 = e^{-i\pi/4} = \frac{1}{\sqrt{2}} - i\frac{1}{\sqrt{2}}$.<br/>
+                        $k=1: z_1 = e^{i(3\pi/2)/2} = e^{i3\pi/4} = -\frac{1}{\sqrt{2}} + i\frac{1}{\sqrt{2}}$.</p>
+                        <p>Combining the conditions, $f(z)$ is analytic except on the ray $(-\infty, -4]$ and at the two points $z_0$ and $z_1$.<br/>
+                        Region of analyticity: $\mathbb{C} \setminus \left( (-\infty, -4] \cup \{ z_0, z_1 \} \right)$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 4 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q4: Values of $\sin^{-1} \sqrt{5}$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find all the values of $\sin^{-1} \sqrt{5}$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>$w = (\frac{\pi}{2} + 2n\pi) \pm i \ln(\sqrt{5}+2)$, for $n \in \mathbb{Z}$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Let $w = \sin^{-1}(\sqrt{5})$, so $\sin w = \sqrt{5}$. Use the formula:
+                        $$ \sin^{-1}(z) = -i \log(iz + \sqrt{1-z^2}) $$
+                        Here $z = \sqrt{5}$.<br/>
+                        $1-z^2 = 1 - (\sqrt{5})^2 = 1-5 = -4$.<br/>
+                        $\sqrt{1-z^2} = \sqrt{-4} = \pm 2i$.</p>
+                        <p>Case 1: Use $\sqrt{-4} = 2i$.
+                        $$ w_1 = -i \log(i\sqrt{5} + 2i) = -i \log(i(\sqrt{5}+2)) $$
+                        Let $\zeta = i(\sqrt{5}+2)$. $|\zeta| = \sqrt{5}+2$. $\arg(\zeta) = \pi/2 + 2k\pi$.
+                        $$ \log(\zeta) = \ln(\sqrt{5}+2) + i(\pi/2 + 2k\pi) $$
+                        $$ w_1 = -i [\ln(\sqrt{5}+2) + i(\pi/2 + 2k\pi)] $$
+                        $$ w_1 = -i\ln(\sqrt{5}+2) + (\pi/2 + 2k\pi) $$
+                        </p>
+                        <p>Case 2: Use $\sqrt{-4} = -2i$.
+                        $$ w_2 = -i \log(i\sqrt{5} - 2i) = -i \log(i(\sqrt{5}-2)) $$
+                        Let $\eta = i(\sqrt{5}-2)$. $|\eta| = \sqrt{5}-2$. $\arg(\eta) = \pi/2 + 2m\pi$.
+                        $$ \log(\eta) = \ln(\sqrt{5}-2) + i(\pi/2 + 2m\pi) $$
+                        Note $\ln(\sqrt{5}-2) = \ln(\frac{1}{\sqrt{5}+2}) = -\ln(\sqrt{5}+2)$.
+                        $$ \log(\eta) = -\ln(\sqrt{5}+2) + i(\pi/2 + 2m\pi) $$
+                        $$ w_2 = -i [-\ln(\sqrt{5}+2) + i(\pi/2 + 2m\pi)] $$
+                        $$ w_2 = i\ln(\sqrt{5}+2) + (\pi/2 + 2m\pi) $$
+                        </p>
+                        <p>Combining both cases, let $n$ be any integer ($k$ or $m$):
+                        $$ w = (\frac{\pi}{2} + 2n\pi) \pm i \ln(\sqrt{5}+2) \quad (n \in \mathbb{Z}) $$
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 5 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q5: Contour Integrals</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Evaluate $\int_C f(z) dz$, along the indicated contour $C$ :</p>
+                        <p>(a) $f(z) = ze^{z^2}$ and $C$ is path from $0$ to $1+i$ along the parabola $y = x^2$.</p>
+                        <p>(b) $f(z) = \begin{cases} 2 & x < 0 \\ 6x & x > 0 \end{cases}$ and $C$ is the parabola $y = x^2$ from $z = -1 + i$ to $z = 1 + i$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $\frac{1}{2}(e^{2i} - 1) = \frac{\cos(2)-1}{2} + i\frac{\sin(2)}{2}$.</p>
+                        <p>(b) $5 + 2i$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p><strong>(a) $f(z) = ze^{z^2}$ and $C: y = x^2$ from $0$ to $1+i$.</strong><br/>
+                        $f(z)$ is entire. An antiderivative is $F(z) = \frac{1}{2}e^{z^2}$.<br/>
+                        $\int_C f(z) dz = F(1+i) - F(0)$.<br/>
+                        $F(0) = \frac{1}{2}e^{0^2} = 1/2$.<br/>
+                        $F(1+i) = \frac{1}{2}e^{(1+i)^2} = \frac{1}{2}e^{1+2i-1} = \frac{1}{2}e^{2i}$.<br/>
+                        Integral $= \frac{1}{2}e^{2i} - \frac{1}{2} = \frac{1}{2}(\cos 2 + i\sin 2 - 1)$.
+                        </p>
+                        <p><strong>(b) $f(z) = \begin{cases} 2 & x < 0 \\ 6x & x > 0 \end{cases}$ and $C: y = x^2$ from $-1+i$ to $1+i$.</strong><br/>
+                        Parametrize $C$: $z(t) = t + it^2$, for $-1 \le t \le 1$.<br/>
+                        $z'(t) = 1 + 2it$.<br/>
+                        On $C$, $x=t$. $f(z(t)) = 2$ for $t \in [-1, 0)$ and $f(z(t)) = 6t$ for $t \in (0, 1]$.<br/>
+                        $$ \int_C f(z) dz = \int_{-1}^{1} f(z(t)) z'(t) dt $$
+                        $$ = \int_{-1}^{0} 2 (1+2it) dt + \int_{0}^{1} 6t (1+2it) dt $$
+                        $$ = \int_{-1}^{0} (2 + 4it) dt + \int_{0}^{1} (6t + 12it^2) dt $$
+                        $$ = \left[ 2t + 2it^2 \right]_{-1}^{0} + \left[ 3t^2 + 4it^3 \right]_{0}^{1} $$
+                        $$ = [ (0) - (2(-1)+2i(-1)^2) ] + [ (3(1)^2+4i(1)^3) - (0) ] $$
+                        $$ = -(-2+2i) + (3+4i) = 2-2i + 3+4i = 5+2i $$
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 6 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q6: Integrals around a Circle</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Let $C$ be $|z - z_0| = R$ (orientation is counterclock). Obtain</p>
+                        <p>(a) $\int_C \frac{dz}{z-z_0}$</p>
+                        <p>(b) $\int_C (z - z_0)^{n-1} dz \quad n \ne 0$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $2\pi i$.</p>
+                        <p>(b) $0$ (for integer $n \ne 0$).</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Parametrize $C$: $z(\theta) = z_0 + Re^{i\theta}$, $0 \le \theta \le 2\pi$. $dz = iRe^{i\theta} d\theta$.</p>
+                        <p><strong>(a) $\int_C \frac{dz}{z-z_0}$</strong>
+                        $$ \int_{0}^{2\pi} \frac{iRe^{i\theta} d\theta}{(z_0 + Re^{i\theta}) - z_0} = \int_{0}^{2\pi} \frac{iRe^{i\theta}}{Re^{i\theta}} d\theta = \int_{0}^{2\pi} i d\theta $$
+                        $$ = [i\theta]_0^{2\pi} = i(2\pi) - i(0) = 2\pi i $$
+                        </p>
+                        <p><strong>(b) $\int_C (z - z_0)^{n-1} dz \quad n \ne 0$ (integer assumed)</strong>
+                        $$ \int_{0}^{2\pi} (z_0 + Re^{i\theta} - z_0)^{n-1} (iRe^{i\theta} d\theta) $$
+                        $$ = \int_{0}^{2\pi} (Re^{i\theta})^{n-1} iRe^{i\theta} d\theta = iR^n \int_{0}^{2\pi} e^{i(n-1)\theta} e^{i\theta} d\theta $$
+                        $$ = iR^n \int_{0}^{2\pi} e^{in\theta} d\theta $$
+                        Since $n \ne 0$ is an integer:
+                        $$ = iR^n \left[ \frac{e^{in\theta}}{in} \right]_{0}^{2\pi} = \frac{R^n}{n} [e^{i2\pi n} - e^{i0}] = \frac{R^n}{n}[1-1] = 0 $$
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 7 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q7: Upper Bound for Integrals (ML-Inequality)</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find the upper bound for the absolute value of $\int_C f(z) dz$, along the indicated contour $C$:</p>
+                        <p>(a) $f(z) = \frac{1}{z^2+1}$ and $C$ is the line segment from $z = 3$ to $z = 3 + i$.</p>
+                        <p>(b) $f(z) = \text{Log}(z + 3)$ and $C$ is the line segment from $z = 3i$ to $z = 4 + 3i$.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>(a) $\frac{1}{10}$.</p>
+                        <p>(b) $4 \sqrt{(\frac{1}{2}\ln 58)^2 + (\arctan(3/7))^2}$.</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>Use ML-inequality: $|\int_C f(z) dz| \le ML$, where $L=$ Length(C) and $M \ge |f(z)|$ on C.</p>
+                        <p><strong>(a) $f(z) = \frac{1}{z^2+1}$, $C$: segment from 3 to 3+i.</strong><br/>
+                        Length $L = |(3+i) - 3| = |i| = 1$.<br/>
+                        Need $M$ s.t. $|\frac{1}{z^2+1}| \le M$. Find $\min |z^2+1|$ on $C$.<br/>
+                        Let $z=3+it$, $0 \le t \le 1$. $|z^2+1|^2 = |(10-t^2)+6it|^2 = (10-t^2)^2 + 36t^2 = t^4 + 16t^2 + 100$.<br/>
+                        This is increasing for $t \ge 0$. Minimum occurs at $t=0$.<br/>
+                        $\min |z^2+1|^2 = 100$. $\min |z^2+1| = 10$.<br/>
+                        So, $|f(z)| = 1/|z^2+1| \le 1/10 = M$.<br/>
+                        Bound: $ML = \frac{1}{10} \cdot 1 = \frac{1}{10}$.</p>
+                        <p><strong>(b) $f(z) = \text{Log}(z + 3)$, $C$: segment from 3i to 4+3i.</strong><br/>
+                        Length $L = |(4+3i) - 3i| = |4| = 4$.<br/>
+                        Need $M$ s.t. $|\text{Log}(z+3)| \le M$. Find $\max |\text{Log}(z+3)|$ on $C$.<br/>
+                        Let $z=t+3i$, $0 \le t \le 4$. $z+3 = (t+3)+3i$.<br/>
+                        $|\text{Log}(z+3)| = |\ln|z+3| + i\text{Arg}(z+3)| = \sqrt{(\ln|z+3|)^2 + (\text{Arg}(z+3))^2}$.<br/>
+                        $|z+3| = \sqrt{(t+3)^2+9}$. $\text{Arg}(z+3) = \arctan(\frac{3}{t+3})$.<br/>
+                        Let $g(t) = |\text{Log}(z(t)+3)|^2 = (\frac{1}{2}\ln((t+3)^2+9))^2 + (\arctan(\frac{3}{t+3}))^2$.<br/>
+                        The term $\ln(\dots)$ increases as $t$ increases. The term $\arctan(\dots)$ decreases as $t$ increases.<br/>
+                        Compare endpoints:<br/>
+                        $t=0: g(0) = (\frac{1}{2}\ln 18)^2 + (\arctan 1)^2 = (\frac{1}{2}\ln 18)^2 + (\pi/4)^2 \approx 2.71$.<br/>
+                        $t=4: g(4) = (\frac{1}{2}\ln 58)^2 + (\arctan(3/7))^2 \approx 4.28$.<br/>
+                        The maximum occurs at $t=4$. $M = \sqrt{g(4)} = \sqrt{(\frac{1}{2}\ln 58)^2 + (\arctan(3/7))^2}$.<br/>
+                        Bound: $ML = 4 \sqrt{(\frac{1}{2}\ln 58)^2 + (\arctan(3/7))^2}$.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 8 -->
+        <div class="accordion-item" data-state="collapsed">
+            <div class="accordion-header">
+                <h2>Q8: Integral of $3z^{1/2}$</h2>
+                <span class="state-indicator" title="Status Indicator"></span>
+            </div>
+            <div class="accordion-content">
+                <div class="content-inner">
+                    <div class="question-block">
+                        <strong>Question:</strong>
+                        <p>Find the value of $\int_C 3z^{1/2} dz$, where $C$ is the line segment between $z_0 = 1$ and $z_1 = 9i$ and $z^{1/2}$ is the principal branch of the square root function.</p>
+                    </div>
+                    <div class="final-answer-block hidden">
+                        <strong>Final Answer:</strong>
+                        <p>$-(2 + 27\sqrt{2}) + i(27\sqrt{2})$</p>
+                    </div>
+                    <div class="solution-block hidden">
+                        <strong>Full Solution:</strong>
+                        <p>The function $f(z) = 3z^{1/2}$ (principal branch) is analytic except on $(-\infty, 0]$. The contour $C$ from $1$ to $9i$ does not cross the branch cut.<br/>
+                        An antiderivative is $F(z) = 2z^{3/2}$. We use the principal value: $z^{3/2} = |z|^{3/2} e^{i(3/2)\text{Arg}(z)}$.<br/>
+                        The integral is $F(z_1) - F(z_0) = F(9i) - F(1)$.</p>
+                        <p>Calculate $F(9i)$: $|9i|=9$, Arg$(9i)=\pi/2$.
+                        $$ F(9i) = 2 (9i)^{3/2} = 2 |9i|^{3/2} e^{i(3/2)(\pi/2)} = 2 (9^{3/2}) e^{i3\pi/4} $$
+                        $$ = 2 (3^3) (\cos(3\pi/4) + i\sin(3\pi/4)) = 54 (-\frac{1}{\sqrt{2}} + i\frac{1}{\sqrt{2}}) $$
+                        $$ = 27\sqrt{2}(-1+i) = -27\sqrt{2} + 27\sqrt{2}i $$</p>
+                        <p>Calculate $F(1)$: $|1|=1$, Arg$(1)=0$.
+                        $$ F(1) = 2 (1)^{3/2} = 2 |1|^{3/2} e^{i(3/2)(0)} = 2(1)e^0 = 2 $$</p>
+                        <p>The integral is:
+                        $$ F(9i) - F(1) = (-27\sqrt{2} + 27\sqrt{2}i) - 2 $$
+                        $$ = -(2 + 27\sqrt{2}) + i(27\sqrt{2}) $$</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div> <!-- End Accordion Container -->
+
+
+    <footer> <!-- Optional Footer --> </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div>
+
+    <script>
+        // --- Debounce Function ---
+        function debounce(func, wait) { let timeout; return function(...args) { const later = () => { clearTimeout(timeout); func.apply(this, args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body;
+
+            // --- Font Size Control & Hold ---
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            let currentSize = 10; const minSize = 10; const maxSize = 28; const step = 1;
+            let displayTimeout = null; let holdTimeout = null; let holdInterval = null;
+            const initialHoldDelay = 400; const repeatInterval = 100;
+            const mathJaxDebounceDelay = 350;
+
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax for body");
+                    MathJax.typesetPromise([bodyEl]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            const handleFontResizeEnd = debounce(() => {
+                console.log("Font resize finished.");
+                queueMathJaxTypeset();
+            }, mathJaxDebounceDelay);
+
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px'; display.classList.add('visible');
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => { display.classList.remove('visible'); displayTimeout = null; }, 1500);
+                    handleFontResizeEnd(); return true;
+                } return false;
+            }
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition');
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                handleFontResizeEnd();
+            }
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition'); updateFontSize(currentSize + direction * step);
+                if (holdTimeout) clearTimeout(holdTimeout); if (holdInterval) clearInterval(holdInterval);
+                holdTimeout = setTimeout(() => { holdInterval = setInterval(() => { if (!updateFontSize(currentSize + direction * step)) { stopHolding(); } }, repeatInterval); }, initialHoldDelay);
+            }
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                window.addEventListener('mouseup', stopHolding);
+                minusBtn.addEventListener('mouseleave', stopHolding); plusBtn.addEventListener('mouseleave', stopHolding);
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px'); display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+            } else { console.error("Font control elements not found!"); }
+
+
+            // --- Accordion Logic (with State Indicator & MathJax Trigger - Robust Measurement) ---
+            const accordionItems = document.querySelectorAll('.accordion-item');
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                const content = item.querySelector('.accordion-content');
+                const innerContent = content.querySelector('.content-inner');
+                const finalAnswerBlock = innerContent.querySelector('.final-answer-block');
+                const solutionBlock = innerContent.querySelector('.solution-block');
+
+
+                header.addEventListener('click', () => {
+                    const currentState = item.getAttribute('data-state');
+                    let nextState;
+
+                    if (currentState === 'collapsed') {
+                        if (!item.classList.contains('visited')) { item.classList.add('visited'); }
+                        nextState = 'state1';
+                    } else if (currentState === 'state1') {
+                        nextState = 'state2';
+                    } else { // state2
+                        nextState = 'collapsed';
+                    }
+
+                    item.setAttribute('data-state', nextState);
+                    console.log(`Item state changed to: ${nextState}`);
+
+                    const isCollapsed = nextState === 'collapsed';
+                    const showAnswer = nextState === 'state1';
+                    const showSolution = nextState === 'state2';
+
+                    // Toggle visibility of answer/solution blocks
+                    if (finalAnswerBlock) finalAnswerBlock.classList.toggle('hidden', !(showAnswer || showSolution)); // Show answer if state 1 or 2
+                    if (solutionBlock) solutionBlock.classList.toggle('hidden', !showSolution); // Show solution only if state 2
+
+
+                    // --- Expansion/Collapse Logic ---
+                    if (!isCollapsed) {
+                        // --- EXPANDING ---
+                        let mathJaxPromise = Promise.resolve();
+                        if (window.MathJax && MathJax.typesetPromise) {
+                            // Determine the specific block that just became visible or needs typesetting
+                             let elementToTypeset = null;
+                             if (nextState === 'state1' && finalAnswerBlock && !finalAnswerBlock.dataset.mathjaxTypeset) {
+                                 elementToTypeset = finalAnswerBlock;
+                             } else if (nextState === 'state2' && solutionBlock && !solutionBlock.dataset.mathjaxTypeset) {
+                                 elementToTypeset = solutionBlock;
+                                 // Also ensure answer block is typeset if it wasn't already
+                                 if (finalAnswerBlock && !finalAnswerBlock.dataset.mathjaxTypeset) {
+                                     MathJax.typesetPromise([finalAnswerBlock]).then(() => {
+                                         finalAnswerBlock.dataset.mathjaxTypeset = 'true';
+                                     }).catch(err => console.error('MathJax typesetting error for answer block on state 2:', err));
+                                 }
+                             }
+
+                            if(elementToTypeset) {
+                                console.log(`Queueing MathJax for newly visible block in: ${header.querySelector('h2').textContent.trim()}`);
+                                mathJaxPromise = MathJax.typesetPromise([elementToTypeset]).then(() => {
+                                    elementToTypeset.dataset.mathjaxTypeset = 'true'; // Mark as typeset
+                                }).catch(err => {
+                                    console.error('MathJax typesetting error during expand:', err);
+                                });
+                            } else {
+                                console.log("Content already typeset or no specific block to typeset.");
+                            }
+                        } else { console.warn("MathJax not available for typesetting during expand."); }
+
+                         mathJaxPromise.then(() => {
+                            // Recalculate height *after* MathJax (if it ran) and content visibility is updated
+                             requestAnimationFrame(() => {
+                                 requestAnimationFrame(() => { // Double rAF
+                                    content.style.maxHeight = 'none'; // Remove previous limit to measure full height
+                                    const currentHeight = content.scrollHeight; // Measure height including padding
+                                    console.log(`Measured scrollHeight after MathJax & rAF: ${currentHeight}px`);
+
+                                    if (currentHeight <= 0 && !isCollapsed) {
+                                         console.warn("Scroll height is zero! Check content visibility/rendering.");
+                                     }
+                                     content.style.maxHeight = '0px'; // Set to 0 to start transition from collapsed state
+                                     requestAnimationFrame(() => { // Apply final height in next frame
+                                         content.style.maxHeight = currentHeight + 'px';
+                                         console.log(`Applied maxHeight: ${currentHeight}px`);
+                                     });
+                                 });
+                             });
+                         });
+
+                    } else {
+                        // --- COLLAPSING ---
+                        if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                           content.style.maxHeight = '0px';
+                           console.log("Collapsing: Set maxHeight to 0px");
+                           // Optional: Reset MathJax typesetting status if desired on collapse
+                           // if (finalAnswerBlock) delete finalAnswerBlock.dataset.mathjaxTypeset;
+                           // if (solutionBlock) delete solutionBlock.dataset.mathjaxTypeset;
+                        }
+                    }
+                });
+            });
+            console.log("Accordion logic (Robust Measurement) with state indicators and MathJax applied.");
+
+
+            // --- Initial MathJax Typeset on Load ---
+             if (window.MathJax) {
+                 MathJax.startup.promise.then(() => {
+                     console.log("Queueing initial MathJax typeset after load");
+                     const questionBlocks = document.querySelectorAll('.question-block'); // Only typeset questions initially
+                     MathJax.typesetPromise(Array.from(questionBlocks)).catch((err) => console.error('MathJax initial typesetting error:', err));
+                 });
+             }
+
+        }); // End DOMContentLoaded
+    </script>
+
+</body>
+</html>
