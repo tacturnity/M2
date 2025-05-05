@@ -200,156 +200,162 @@
         <!-- Content removed -->
     </footer>
 
-    <!-- Embedded JavaScript Logic (Refactored) -->
-        <!-- Embedded JavaScript Logic (Refactored) -->
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-    
-                // --- CONFIGURATION ---
-                const githubUsername = 'tacturnity';
-                const githubRepoName = 'M2';
-    
-                // Chapter specific config
-                const chaptersApiPath = 'chapters'; // The FOLDER *containing* the chapter HTML files
-                const chaptersRelativeLinkPath = 'chapters'; // Path used for constructing the <a href="..."> links
-    
-                // Tutorial specific config
-                const tutorialsApiPath = 'tutorials'; // The FOLDER *containing* the tutorial HTML files
-                const tutorialsRelativeLinkPath = 'tutorials'; // Path used for constructing the <a href="..."> links
-                // ---------------------
-    
-    
-                /**
-                 * Fetches files from a GitHub repository path and populates a list element.
-                 * @param {string} listElementId - The ID of the UL element to populate.
-                 * @param {string} apiPath - The path within the repo to fetch (e.g., 'chapters', 'tutorials').
-                 * @param {string} relativeLinkPath - The base path for constructing the href links.
-                 * @param {string} sectionTitle - A descriptive title for the section (e.g., 'Chapters', 'Tutorials') used in messages.
-                 */
-                function fetchAndPopulateList(listElementId, apiPath, relativeLinkPath, sectionTitle) {
-                    const listElement = document.getElementById(listElementId);
-                    const loadingMessage = listElement.querySelector('.loading-message'); // Find loading message within this list
-    
-                    if (!listElement) {
-                        console.error(`Element with ID '${listElementId}' not found.`);
-                        return;
-                    }
-    
-                    const encodedPath = apiPath.split('/').map(encodeURIComponent).join('/');
-                    const apiUrl = `https://api.github.com/repos/${githubUsername}/${githubRepoName}/contents/${encodedPath}`;
-    
-                    console.log(`Fetching ${sectionTitle} list from: ${apiUrl}`);
-    
-                    fetch(apiUrl)
-                        .then(response => {
-                            // ... (error handling remains the same) ...
-                             if (!response.ok) {
-                                return response.json().catch(() => null).then(errorData => {
-                                    let errorMsg = `GitHub API error (${sectionTitle}): ${response.status} ${response.statusText}`;
-                                    if (errorData && errorData.message) {
-                                        if (response.status === 404 && errorData.message.toLowerCase().includes("not found")) {
-                                            errorMsg = `GitHub API error (${sectionTitle}): 404 Not Found.`;
-                                            errorMsg += ` Could not find the folder '${apiPath}' in the repository '${githubUsername}/${githubRepoName}'. Please ensure the path is correct and the repository is public.`;
-                                        } else { errorMsg += ` - ${errorData.message}`; }
-                                    } else if (response.status === 404) { errorMsg += ` (Is the API path '${apiPath}' correct relative to the repo root? Is the repository public?)`; }
-                                    if (response.status === 403) { errorMsg += ` (API rate limit exceeded or private repository access issue?)`; }
-                                    throw new Error(errorMsg);
-                                });
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            // ... (handling non-array data, removing loading message remains the same) ...
-                             if (loadingMessage && loadingMessage.parentNode === listElement) {
-                                 listElement.removeChild(loadingMessage);
-                            }
-    
-                            if (!Array.isArray(data)) {
-                                console.error(`Received data for ${sectionTitle} is not an array:`, data);
-                                if (typeof data === 'object' && data !== null && data.message && data.message.includes("This repository is empty")) {
-                                    throw new Error(`The repository '${githubUsername}/${githubRepoName}' appears to be empty.`);
-                                } else if (typeof data === 'object' && data !== null && data.message) {
-                                    throw new Error(`GitHub API returned an object instead of an array for ${sectionTitle}: ${data.message}. Check if '${apiPath}' is a file instead of a directory.`);
-                                }
-                                throw new Error(`Invalid data format received from GitHub API for ${sectionTitle}. Expected an array of files/directories.`);
-                            }
-    
-                            const htmlFiles = data.filter(item => item.type === 'file' && item.name.toLowerCase().endsWith('.html'));
-    
-                            // ... (handling empty list remains the same) ...
-                            if (htmlFiles.length === 0) {
-                                const li = document.createElement('li');
-                                const directoriesFound = data.some(item => item.type === 'dir');
-                                if (directoriesFound) {
-                                    li.textContent = `No HTML files found directly inside the '${apiPath}' directory. HTML files must be in this folder, not subfolders.`;
-                                } else if (data.length === 0) {
-                                    li.textContent = `The '${apiPath}' directory is empty.`;
-                                } else {
-                                    li.textContent = `No HTML files found in the '${apiPath}' directory.`;
-                                }
-                                li.classList.add('error-message');
-                                listElement.appendChild(li);
-                                return;
-                            }
-    
-                            // --- SORTING LOGIC --- (Remains the same, sorts by full filename including prefix)
-                            htmlFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: false, sensitivity: 'base' })); // Using basic alphabetical sort now
-                            // ---------------------
-    
-                            htmlFiles.forEach((file, index) => {
-                                const listItem = document.createElement('li');
-                                const link = document.createElement('a');
-    
-                                // --- TITLE GENERATION (MODIFIED) ---
-                                // 1. Start with the raw filename, remove .html extension
-                                let rawTitle = file.name.replace(/\.html$/i, '');
-    
-                                // 2. Remove the sorting prefix like "[A]", "[B]", etc. from the *beginning*
-                                //    Regex: ^       - Start of the string
-                                //           \[      - Literal '['
-                                //           [A-Z]   - A single uppercase letter
-                                //           \]      - Literal ']'
-                                //           [-_\s]* - Zero or more hyphens, underscores, or spaces immediately after
-                                let displayTitle = rawTitle.replace(/^\[[a-z]\][-_\s]*/, '');
-    
-                                // 3. Replace remaining underscores/hyphens with spaces and trim whitespace
-                                displayTitle = displayTitle.replace(/[-_]/g, ' ').trim();
-    
-                                // --- END OF TITLE GENERATION MODIFICATION ---
-    
-    
-                                // Set the link's destination (uses original filename)
-                                link.href = `${relativeLinkPath}/${encodeURIComponent(file.name)}`;
-                                // Set the link's visible text (uses the cleaned title)
-                                link.textContent = displayTitle;
-    
-                                listItem.appendChild(link);
-                                listElement.appendChild(listItem);
-    
-                                // Apply staggered animation
-                                listItem.style.animationDelay = `${index * 0.07}s`; // Stagger within this list
-                                listItem.classList.add('loaded');
-                            });
-                        })
-                        .catch(error => {
-                            // ... (error handling remains the same) ...
-                            console.error(`Error loading ${sectionTitle}:`, error);
-                            if (loadingMessage && loadingMessage.parentNode === listElement) {
-                                listElement.removeChild(loadingMessage);
-                            }
-                            const errorItem = document.createElement('li');
-                            errorItem.textContent = error.message || `Failed to load ${sectionTitle} list. Check console for details.`;
-                            errorItem.classList.add('error-message');
-                            listElement.appendChild(errorItem);
-                        });
+    <!-- Embedded JavaScript Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- CONFIGURATION ---
+            const githubUsername = 'tacturnity';
+            const githubRepoName = 'M2';
+
+            // Chapter specific config
+            const chaptersApiPath = 'chapters'; // The FOLDER *containing* the chapter HTML files
+            const chaptersRelativeLinkPath = 'chapters'; // Path used for constructing the <a href="..."> links
+
+            // Tutorial specific config
+            const tutorialsApiPath = 'tutorials'; // The FOLDER *containing* the tutorial HTML files
+            const tutorialsRelativeLinkPath = 'tutorials'; // Path used for constructing the <a href="..."> links
+            // ---------------------
+
+
+            /**
+             * Fetches files from a GitHub repository path and populates a list element.
+             * @param {string} listElementId - The ID of the UL element to populate.
+             * @param {string} apiPath - The path within the repo to fetch (e.g., 'chapters', 'tutorials').
+             * @param {string} relativeLinkPath - The base path for constructing the href links.
+             * @param {string} sectionTitle - A descriptive title for the section (e.g., 'Chapters', 'Tutorials') used in messages.
+             */
+            function fetchAndPopulateList(listElementId, apiPath, relativeLinkPath, sectionTitle) {
+                const listElement = document.getElementById(listElementId);
+                const loadingMessage = listElement.querySelector('.loading-message'); // Find loading message within this list
+
+                if (!listElement) {
+                    console.error(`Element with ID '${listElementId}' not found.`);
+                    return;
                 }
-    
-                // --- Initiate Fetching for Both Sections ---
-                fetchAndPopulateList('chapter-list', chaptersApiPath, chaptersRelativeLinkPath, 'Chapters');
-                fetchAndPopulateList('tutorial-list', tutorialsApiPath, tutorialsRelativeLinkPath, 'Tutorials');
-    
-            });
-        </script>
-    
-    </body>
-    </html>
+
+                const encodedPath = apiPath.split('/').map(encodeURIComponent).join('/');
+                const apiUrl = `https://api.github.com/repos/${githubUsername}/${githubRepoName}/contents/${encodedPath}`;
+
+                console.log(`Fetching ${sectionTitle} list from: ${apiUrl}`);
+
+                fetch(apiUrl)
+                    .then(response => {
+                         if (!response.ok) {
+                            return response.json().catch(() => null).then(errorData => {
+                                let errorMsg = `GitHub API error (${sectionTitle}): ${response.status} ${response.statusText}`;
+                                if (errorData && errorData.message) {
+                                    if (response.status === 404 && errorData.message.toLowerCase().includes("not found")) {
+                                        errorMsg = `GitHub API error (${sectionTitle}): 404 Not Found.`;
+                                        errorMsg += ` Could not find the folder '${apiPath}' in the repository '${githubUsername}/${githubRepoName}'. Please ensure the path is correct and the repository is public.`;
+                                    } else { errorMsg += ` - ${errorData.message}`; }
+                                } else if (response.status === 404) { errorMsg += ` (Is the API path '${apiPath}' correct relative to the repo root? Is the repository public?)`; }
+                                if (response.status === 403) { errorMsg += ` (API rate limit exceeded or private repository access issue?)`; }
+                                throw new Error(errorMsg);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                         if (loadingMessage && loadingMessage.parentNode === listElement) {
+                             listElement.removeChild(loadingMessage);
+                        }
+
+                        if (!Array.isArray(data)) {
+                            console.error(`Received data for ${sectionTitle} is not an array:`, data);
+                            if (typeof data === 'object' && data !== null && data.message && data.message.includes("This repository is empty")) {
+                                throw new Error(`The repository '${githubUsername}/${githubRepoName}' appears to be empty.`);
+                            } else if (typeof data === 'object' && data !== null && data.message) {
+                                throw new Error(`GitHub API returned an object instead of an array for ${sectionTitle}: ${data.message}. Check if '${apiPath}' is a file instead of a directory.`);
+                            }
+                            throw new Error(`Invalid data format received from GitHub API for ${sectionTitle}. Expected an array of files/directories.`);
+                        }
+
+                        const htmlFiles = data.filter(item => item.type === 'file' && item.name.toLowerCase().endsWith('.html'));
+
+                        if (htmlFiles.length === 0) {
+                            const li = document.createElement('li');
+                            const directoriesFound = data.some(item => item.type === 'dir');
+                            if (directoriesFound) {
+                                li.textContent = `No HTML files found directly inside the '${apiPath}' directory. HTML files must be in this folder, not subfolders.`;
+                            } else if (data.length === 0) {
+                                li.textContent = `The '${apiPath}' directory is empty.`;
+                            } else {
+                                li.textContent = `No HTML files found in the '${apiPath}' directory.`;
+                            }
+                            li.classList.add('error-message');
+                            listElement.appendChild(li);
+                            return;
+                        }
+
+                        // --- ALPHABETICAL SORTING LOGIC ---
+                        // Sorts by full filename alphabetically (e.g., "Tutorial - 10.html" before "Tutorial - 9.html")
+                        // --- NUMERIC/ALPHABETICAL SORTING LOGIC ---
+htmlFiles.sort((a, b) => {
+    // Function to extract the first number found in a string
+    const extractNumber = (str) => {
+        const match = str.match(/\d+/); // Find the first sequence of digits
+        return match ? parseInt(match[0], 10) : NaN; // Return number or NaN
+    };
+
+    const numA = extractNumber(a.name);
+    const numB = extractNumber(b.name);
+
+    // If both names contain numbers, sort numerically
+    if (!isNaN(numA) && !isNaN(numB)) {
+        if (numA !== numB) {
+            return numA - numB; // Sort by number ascending
+        }
+        // If numbers are the same, fall back to alphabetical for secondary sorting (e.g., "Tut 1a", "Tut 1b")
+        // Although not strictly needed for the current filenames, it's good practice.
+    }
+
+    // Fallback: If numbers are the same, or one/both don't have numbers, sort alphabetically
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+});
+// ------------------------------------------
+                        // -----------------------------------
+
+                        htmlFiles.forEach((file, index) => {
+                            const listItem = document.createElement('li');
+                            const link = document.createElement('a');
+
+                            // --- TITLE GENERATION ---
+                            let rawTitle = file.name.replace(/\.html$/i, '');
+                            let displayTitle = rawTitle.replace(/^\[[a-z]\][-_\s]*/i, ''); // Remove prefix like [a] or [A]
+                            displayTitle = displayTitle.replace(/[-_]/g, ' ').trim(); // Replace separators, trim
+                            // ------------------------
+
+
+                            link.href = `${relativeLinkPath}/${encodeURIComponent(file.name)}`;
+                            link.textContent = displayTitle;
+
+                            listItem.appendChild(link);
+                            listElement.appendChild(listItem);
+
+                            // Apply staggered animation
+                            listItem.style.animationDelay = `${index * 0.07}s`;
+                            listItem.classList.add('loaded');
+                        });
+                    })
+                    .catch(error => {
+                        console.error(`Error loading ${sectionTitle}:`, error);
+                        if (loadingMessage && loadingMessage.parentNode === listElement) {
+                            listElement.removeChild(loadingMessage);
+                        }
+                        const errorItem = document.createElement('li');
+                        errorItem.textContent = error.message || `Failed to load ${sectionTitle} list. Check console for details.`;
+                        errorItem.classList.add('error-message');
+                        listElement.appendChild(errorItem);
+                    });
+            }
+
+            // --- Initiate Fetching for Both Sections ---
+            fetchAndPopulateList('chapter-list', chaptersApiPath, chaptersRelativeLinkPath, 'Chapters');
+            fetchAndPopulateList('tutorial-list', tutorialsApiPath, tutorialsRelativeLinkPath, 'Tutorials');
+
+        });
+    </script>
+
+</body>
+</html>
