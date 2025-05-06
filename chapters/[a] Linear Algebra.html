@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en" style="--base-font-size: 10px;"> <!-- Default font size set to 10px -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Algebra Summary</title> <!-- CHANGED TITLE -->
+
+    <!-- Google Fonts - Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            processEscapes: true,
+            tags: 'ams',
+            macros: {
+                bm: ["\\begin{bmatrix} #1 \\end{bmatrix}", 1]
+            }
+          },
+          options: {
+             skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+             ignoreHtmlClass: 'tex2jax_ignore',
+             processHtmlClass: 'tex2jax_process'
+             },
+          svg: { fontCache: 'global' },
+          startup: {
+            ready: () => {
+                console.log('MathJax ready.');
+                MathJax.startup.defaultReady();
+                MathJax.startup.promise.then(() => {
+                    console.log('MathJax initial typeset complete.');
+                });
+            }
+          }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Basic Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Keyframes for Animations (FadeIn) */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Fonts & Base Styling */
+        body {
+            font-family: 'Roboto Mono', monospace;
+            color: #e0e0e0;
+            line-height: 1.7;
+            padding: 25px;
+            background-color: #1a1a1a;
+            min-height: 100vh;
+            font-size: var(--base-font-size); /* Controlled by JS */
+            transition: font-size 0.2s ease-in-out; /* Default smooth transition */
+            padding-bottom: 80px; /* Space for controls */
+            overflow-x: hidden;
+        }
+        /* Class to disable transition during rapid changes (e.g., hold) */
+        body.no-font-transition {
+            transition: none !important;
+        }
+
+        /* Headings */
+        h1, h2 { font-family: 'Roboto Mono', monospace; text-align: center; margin-bottom: 1.5em; }
+        h1 { font-size: 2.4em; color: #ffffff; font-weight: 700; padding-bottom: 12px; margin-top: 1.5em; margin-bottom: 1.5em; border-bottom: 2px solid #ffffff; animation: fadeIn 0.8s ease-out both; animation-delay: 0.1s; letter-spacing: -0.5px; }
+        h2 { font-size: 1.6em; color: #cccccc; font-weight: 500; margin-top: 30px; margin-bottom: 1.5em; border-bottom: 1px solid #555555; padding-bottom: 5px; animation: fadeIn 0.8s ease-out both; animation-delay: 0.3s; }
+        h3 { font-size: 1.2em; color: #bdbdbd; font-weight: 500; margin-top: 1.8em; margin-bottom: 0.8em; padding-bottom: 3px; border-bottom: 1px dotted #444; }
+        h3.question-title { /* Specific style for question titles */
+             color: #a6e3a1; /* Green accent */
+             border-bottom: 1px solid #a6e3a1;
+             text-align: left;
+             margin-bottom: 1em;
+        }
+        h3.solution-title { /* Specific style for solution titles */
+             color: #f7dc6f; /* Yellowish accent */
+             border-bottom: 1px dotted #f7dc6f;
+             text-align: left;
+             margin-bottom: 1em;
+             margin-top: 2em; /* Add space before solution */
+        }
+
+        /* Main Content Area */
+        main { max-width: 800px; margin: 40px auto; background-color: rgba(30, 30, 30, 0.85); padding: 35px 45px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.1); animation: fadeIn 0.8s ease-out both; animation-delay: 0.2s; }
+        /* Paragraph and List styling */
+        p { margin-bottom: 1em; color: inherit; font-size: inherit; }
+        ul, ol { margin-left: 25px; list-style: disc; margin-bottom: 1em; }
+        ol { list-style: decimal; }
+        li { margin-bottom: 8px; font-size: inherit; }
+        strong { font-weight: 500; color: #ffffff; }
+
+        /* Formula Container Styling (with horizontal scroll) */
+        .formula-container {
+            margin: 15px 0 20px 0; padding: 10px 20px; background-color: rgba(45, 45, 45, 0.9);
+            border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-x: auto; overflow-y: hidden; /* Horizontal scroll, no vertical */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            cursor: pointer; color: #e0e0e0; border-left: 4px solid transparent;
+            font-family: 'Roboto Mono', monospace; position: relative; white-space: nowrap;
+        }
+        .formula-container:hover { background-color: rgba(60, 60, 60, 0.95); border-left-color: #a6e3a1; border-color: rgba(166, 227, 161, 0.5); }
+        .formula-container.copied { background-color: rgba(166, 227, 161, 0.2); border-color: #a6e3a1; border-left-color: #a6e3a1; }
+        /* Optional Scrollbar Style */
+        .formula-container::-webkit-scrollbar { height: 8px; }
+        .formula-container::-webkit-scrollbar-track { background: rgba(60, 60, 60, 0.5); border-radius: 4px; }
+        .formula-container::-webkit-scrollbar-thumb { background-color: #888; border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        .formula-container::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
+        /* MathJax display style */
+        .formula-container mjx-container[display="true"] { margin: 0.5em 0 !important; text-align: left !important; display: inline-block; vertical-align: middle; }
+
+        /* Footer Styling */
+        footer { text-align: center; margin-top: 70px; padding-bottom: 35px; font-size: 0.85em; color: #888888; animation: fadeIn 1s ease-out both; animation-delay: 0.7s; }
+
+        /* Simple Dark Theme Scrollbar for Page */
+        body::-webkit-scrollbar { width: 10px; }
+        body::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 5px; }
+        body::-webkit-scrollbar-thumb { background-color: #777; border-radius: 5px; border: 2px solid #2a2a2a; background-clip: content-box; }
+        body::-webkit-scrollbar-thumb:hover { background-color: #999; }
+        html { scrollbar-width: thin; scrollbar-color: #777 #2a2a2a; }
+        @supports (scrollbar-gutter: stable) { html { scrollbar-gutter: stable; } }
+
+        /* Font Control Icons CSS */
+        .font-control { position: fixed; bottom: 0; left: 0; width: 100%; padding: 10px 25px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; pointer-events: none; z-index: 10; }
+        .font-control-icon { font-size: 28px; font-weight: bold; color: #777; cursor: pointer; padding: 8px; transition: color 0.3s ease; pointer-events: auto; user-select: none; line-height: 1; display: inline-block; }
+        .font-control-icon:hover { color: #a6e3a1; }
+        #fontSizeDisplay { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background-color: rgba(45, 45, 45, 0.9); color: #e0e0e0; padding: 6px 12px; border-radius: 5px; font-size: 13px; font-family: 'Roboto Mono', monospace; z-index: 11; opacity: 0; transition: opacity 0.3s ease-in-out; pointer-events: none; white-space: nowrap; }
+        #fontSizeDisplay.visible { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Linear Algebra Summary</h1> <!-- EDITED H1 -->
+    </header>
+
+    <main>
+        <p>
+            Here is a selection of representative problems covering the topics from the provided Linear Algebra tutorial sheets (1-8), along with their solutions.
+        </p>
+
+        <!-- ============================================ -->
+        <h2>Topic: Gauss-Jordan Elimination (from Tutorial Sheet 1)</h2>
+        <!-- ============================================ -->
+
+        <h3 class="question-title">Question (Sheet 1, Q1)</h3>
+        <p>
+            Use Gauss-Jordan elimination method to determine all possible solutions of the following system of linear equations: <br/>
+            $x_1 + x_2 + x_3 = 1$ <br/>
+            $x_1 + 2x_2 + 3x_3 = 0$ <br/>
+            $3x_1 + 5x_2 + 4x_3 = 4$
+        </p>
+
+        <h3 class="solution-title">Solution</h3>
+        <p>
+            We form the augmented matrix and apply Gauss-Jordan elimination to bring it to reduced row echelon form (RREF).
+        </p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\left[ \\begin{array}{ccc|c} 1 & 1 & 1 & 1 \\\\ 1 & 2 & 3 & 0 \\\\ 3 & 5 & 4 & 4 \\end{array} \\right]}')"
+             data-latex="\left[ \begin{array}{ccc|c} 1 & 1 & 1 & 1 \\ 1 & 2 & 3 & 0 \\ 3 & 5 & 4 & 4 \end{array} \right]"
+             title="Click to copy LaTeX">
+             $$ \left[ \begin{array}{ccc|c} 1 & 1 & 1 & 1 \\ 1 & 2 & 3 & 0 \\ 3 & 5 & 4 & 4 \end{array} \right] $$
+        </div>
+        <p>Apply $R_2 \leftarrow R_2 - R_1$ and $R_3 \leftarrow R_3 - 3R_1$:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\left[ \\begin{array}{ccc|c} 1 & 1 & 1 & 1 \\\\ 0 & 1 & 2 & -1 \\\\ 0 & 2 & 1 & 1 \\end{array} \\right]}')"
+             data-latex="\left[ \begin{array}{ccc|c} 1 & 1 & 1 & 1 \\ 0 & 1 & 2 & -1 \\ 0 & 2 & 1 & 1 \end{array} \right]"
+             title="Click to copy LaTeX">
+             $$ \left[ \begin{array}{ccc|c} 1 & 1 & 1 & 1 \\ 0 & 1 & 2 & -1 \\ 0 & 2 & 1 & 1 \end{array} \right] $$
+        </div>
+        <p>Apply $R_3 \leftarrow R_3 - 2R_2$:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\left[ \\begin{array}{ccc|c} 1 & 1 & 1 & 1 \\\\ 0 & 1 & 2 & -1 \\\\ 0 & 0 & -3 & 3 \\end{array} \\right]}')"
+             data-latex="\left[ \begin{array}{ccc|c} 1 & 1 & 1 & 1 \\ 0 & 1 & 2 & -1 \\ 0 & 0 & -3 & 3 \end{array} \right]"
+             title="Click to copy LaTeX">
+             $$ \left[ \begin{array}{ccc|c} 1 & 1 & 1 & 1 \\ 0 & 1 & 2 & -1 \\ 0 & 0 & -3 & 3 \end{array} \right] $$
+        </div>
+        <p>Apply $R_3 \leftarrow -\frac{1}{3}R_3$:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\left[ \\begin{array}{ccc|c} 1 & 1 & 1 & 1 \\\\ 0 & 1 & 2 & -1 \\\\ 0 & 0 & 1 & -1 \\end{array} \\right]}')"
+             data-latex="\left[ \begin{array}{ccc|c} 1 & 1 & 1 & 1 \\ 0 & 1 & 2 & -1 \\ 0 & 0 & 1 & -1 \end{array} \right]"
+             title="Click to copy LaTeX">
+             $$ \left[ \begin{array}{ccc|c} 1 & 1 & 1 & 1 \\ 0 & 1 & 2 & -1 \\ 0 & 0 & 1 & -1 \end{array} \right] $$
+        </div>
+        <p>Continue to RREF. Apply $R_1 \leftarrow R_1 - R_2$:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\left[ \\begin{array}{ccc|c} 1 & 0 & -1 & 2 \\\\ 0 & 1 & 2 & -1 \\\\ 0 & 0 & 1 & -1 \\end{array} \\right]}')"
+             data-latex="\left[ \begin{array}{ccc|c} 1 & 0 & -1 & 2 \\ 0 & 1 & 2 & -1 \\ 0 & 0 & 1 & -1 \end{array} \right]"
+             title="Click to copy LaTeX">
+             $$ \left[ \begin{array}{ccc|c} 1 & 0 & -1 & 2 \\ 0 & 1 & 2 & -1 \\ 0 & 0 & 1 & -1 \end{array} \right] $$
+        </div>
+        <p>Apply $R_1 \leftarrow R_1 + R_3$ and $R_2 \leftarrow R_2 - 2R_3$:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\left[ \\begin{array}{ccc|c} 1 & 0 & 0 & 1 \\\\ 0 & 1 & 0 & 1 \\\\ 0 & 0 & 1 & -1 \\end{array} \\right]}')"
+             data-latex="\left[ \begin{array}{ccc|c} 1 & 0 & 0 & 1 \\ 0 & 1 & 0 & 1 \\ 0 & 0 & 1 & -1 \end{array} \right]"
+             title="Click to copy LaTeX">
+             $$ \left[ \begin{array}{ccc|c} 1 & 0 & 0 & 1 \\ 0 & 1 & 0 & 1 \\ 0 & 0 & 1 & -1 \end{array} \right] $$
+        </div>
+        <p>This is the RREF. The system has a unique solution:
+        $x_1 = 1$, $x_2 = 1$, $x_3 = -1$.</p>
+
+        <!-- ============================================ -->
+        <h2>Topic: Homogeneous System (from Tutorial Sheet 2)</h2>
+        <!-- ============================================ -->
+
+        <h3 class="question-title">Question (Sheet 2, Q1)</h3>
+        <p>
+            For what values of $\lambda$ the homogeneous system <br/>
+            $(\lambda - 1)x + 2y = 0$ <br/>
+            $2x + (\lambda - 1)y = 0$ <br/>
+            has a non-trivial solution?
+        </p>
+
+        <h3 class="solution-title">Solution</h3>
+        <p>
+            A homogeneous system $A\mathbf{x} = \mathbf{0}$ has a non-trivial solution if and only if $\det(A) = 0$. The coefficient matrix is:
+        </p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{A = \\bm{ \\lambda - 1 & 2 \\\\ 2 & \\lambda - 1 }}')"
+             data-latex="A = \bm{ \lambda - 1 & 2 \\ 2 & \lambda - 1 }"
+             title="Click to copy LaTeX">
+             $$ A = \bm{ \lambda - 1 & 2 \\ 2 & \lambda - 1 } $$
+        </div>
+        <p>Calculate the determinant:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\det(A) = (\\lambda - 1)(\\lambda - 1) - (2)(2) = (\\lambda - 1)^2 - 4}')"
+             data-latex="\det(A) = (\lambda - 1)(\lambda - 1) - (2)(2) = (\lambda - 1)^2 - 4"
+             title="Click to copy LaTeX">
+             $$ \det(A) = (\lambda - 1)(\lambda - 1) - (2)(2) = (\lambda - 1)^2 - 4 $$
+        </div>
+        <p>Set $\det(A) = 0$: $(\lambda - 1)^2 - 4 = 0 \implies (\lambda - 1)^2 = 4$.<br/>
+        Taking the square root: $\lambda - 1 = \pm 2$.<br/>
+        Case 1: $\lambda - 1 = 2 \implies \lambda = 3$.<br/>
+        Case 2: $\lambda - 1 = -2 \implies \lambda = -1$.<br/>
+        The system has a non-trivial solution for $\lambda = 3$ and $\lambda = -1$.</p>
+
+        <!-- ============================================ -->
+        <h2>Topic: Eigenvalues and Eigenvectors (from Tutorial Sheet 3)</h2>
+        <!-- ============================================ -->
+
+        <h3 class="question-title">Question (Sheet 3, Q1a)</h3>
+        <p>
+            Determine the eigenvalues and the corresponding eigenspaces of the following matrix:
+        </p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{A = \\bm{ 5 & -2 & 2 \\\\ 4 & -3 & 4 \\\\ 4 & -6 & 7 }}')"
+             data-latex="A = \bm{ 5 & -2 & 2 \\ 4 & -3 & 4 \\ 4 & -6 & 7 }"
+             title="Click to copy LaTeX">
+             $$ A = \bm{ 5 & -2 & 2 \\ 4 & -3 & 4 \\ 4 & -6 & 7 } $$
+        </div>
+
+        <h3 class="solution-title">Solution</h3>
+        <p><strong>1. Find Eigenvalues:</strong> Solve $\det(A - \lambda I) = 0$.</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{A - \\lambda I = \\bm{ 5-\\lambda & -2 & 2 \\\\ 4 & -3-\\lambda & 4 \\\\ 4 & -6 & 7-\\lambda }}')"
+             data-latex="A - \lambda I = \bm{ 5-\lambda & -2 & 2 \\ 4 & -3-\lambda & 4 \\ 4 & -6 & 7-\lambda }"
+             title="Click to copy LaTeX">
+             $$ A - \lambda I = \bm{ 5-\lambda & -2 & 2 \\ 4 & -3-\lambda & 4 \\ 4 & -6 & 7-\lambda } $$
+        </div>
+        <p>$\det(A - \lambda I) = (5-\lambda)[(-3-\lambda)(7-\lambda) - (-24)] - (-2)[4(7-\lambda) - 16] + 2[4(-6) - 4(-3-\lambda)]$
+        $= (5-\lambda)[\lambda^2 - 4\lambda + 3] + 2[12 - 4\lambda] + 2[-12 + 4\lambda]$
+        $= (5-\lambda)(\lambda-1)(\lambda-3) + (24 - 8\lambda) + (-24 + 8\lambda)$
+        $= (5-\lambda)(\lambda-1)(\lambda-3)$.</p>
+        <p>Setting determinant to zero: $(5-\lambda)(\lambda-1)(\lambda-3) = 0$.<br/>
+        Eigenvalues are $\lambda_1 = 1$, $\lambda_2 = 3$, $\lambda_3 = 5$.</p>
+
+        <p><strong>2. Find Eigenspaces:</strong> Solve $(A - \lambda I)\mathbf{x} = \mathbf{0}$.</p>
+        <p><strong>For $\lambda_1 = 1$</strong>:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{A - 1I = \\bm{ 4 & -2 & 2 \\\\ 4 & -4 & 4 \\\\ 4 & -6 & 6 } \\xrightarrow{RREF} \\bm{ 1 & 0 & 0 \\\\ 0 & 1 & -1 \\\\ 0 & 0 & 0 }}')"
+             data-latex="A - 1I = \bm{ 4 & -2 & 2 \\ 4 & -4 & 4 \\ 4 & -6 & 6 } \xrightarrow{RREF} \bm{ 1 & 0 & 0 \\ 0 & 1 & -1 \\ 0 & 0 & 0 }"
+             title="Click to copy LaTeX">
+             $$ A - 1I = \bm{ 4 & -2 & 2 \\ 4 & -4 & 4 \\ 4 & -6 & 6 } \xrightarrow{\text{RREF}} \bm{ 1 & 0 & 0 \\ 0 & 1 & -1 \\ 0 & 0 & 0 } $$
+        </div>
+        <p>$x_1 = 0$, $x_2 - x_3 = 0 \implies x_2 = x_3$. Let $x_3=t$. Eigenvector is $t \bm{ 0 \\ 1 \\ 1 }$.<br/>
+        $E_1 = \text{span}\left\{\bm{ 0 \\ 1 \\ 1 }\right\}$.</p>
+
+        <p><strong>For $\lambda_2 = 3$</strong>:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{A - 3I = \\bm{ 2 & -2 & 2 \\\\ 4 & -6 & 4 \\\\ 4 & -6 & 4 } \\xrightarrow{RREF} \\bm{ 1 & 0 & 1 \\\\ 0 & 1 & 0 \\\\ 0 & 0 & 0 }}')"
+             data-latex="A - 3I = \bm{ 2 & -2 & 2 \\ 4 & -6 & 4 \\ 4 & -6 & 4 } \xrightarrow{RREF} \bm{ 1 & 0 & 1 \\ 0 & 1 & 0 \\ 0 & 0 & 0 }"
+             title="Click to copy LaTeX">
+             $$ A - 3I = \bm{ 2 & -2 & 2 \\ 4 & -6 & 4 \\ 4 & -6 & 4 } \xrightarrow{\text{RREF}} \bm{ 1 & 0 & 1 \\ 0 & 1 & 0 \\ 0 & 0 & 0 } $$
+        </div>
+         <p>$x_1 + x_3 = 0 \implies x_1 = -x_3$, and $x_2 = 0$. Let $x_3=t$. Eigenvector is $t \bm{ -1 \\ 0 \\ 1 }$.<br/>
+        $E_3 = \text{span}\left\{\bm{ -1 \\ 0 \\ 1 }\right\}$.</p>
+
+         <p><strong>For $\lambda_3 = 5$</strong>:</p>
+         <div class="formula-container"
+              onclick="copyFormulaLatex(this, '\\color{white}{A - 5I = \\bm{ 0 & -2 & 2 \\\\ 4 & -8 & 4 \\\\ 4 & -6 & 2 } \\xrightarrow{RREF} \\bm{ 1 & 0 & -1 \\\\ 0 & 1 & -1 \\\\ 0 & 0 & 0 }}')"
+              data-latex="A - 5I = \bm{ 0 & -2 & 2 \\ 4 & -8 & 4 \\ 4 & -6 & 2 } \xrightarrow{RREF} \bm{ 1 & 0 & -1 \\ 0 & 1 & -1 \\ 0 & 0 & 0 }"
+              title="Click to copy LaTeX">
+              $$ A - 5I = \bm{ 0 & -2 & 2 \\ 4 & -8 & 4 \\ 4 & -6 & 2 } \xrightarrow{\text{RREF}} \bm{ 1 & 0 & -1 \\ 0 & 1 & -1 \\ 0 & 0 & 0 } $$
+         </div>
+          <p>$x_1 - x_3 = 0 \implies x_1 = x_3$, and $x_2 - x_3 = 0 \implies x_2 = x_3$. Let $x_3=t$. Eigenvector is $t \bm{ 1 \\ 1 \\ 1 }$.<br/>
+         $E_5 = \text{span}\left\{\bm{ 1 \\ 1 \\ 1 }\right\}$.</p>
+
+        <!-- ============================================ -->
+        <h2>Topic: Vector Spaces and Subspaces (from Tutorial Sheet 4)</h2>
+        <!-- ============================================ -->
+
+        <h3 class="question-title">Question (Sheet 4, Q6i)</h3>
+        <p>Are the following sets subspaces of $\mathbb{R}^2$? i. The set of points lying on the line $y = -3x$.</p>
+
+        <h3 class="solution-title">Solution</h3>
+        <p>Let $S = \{(x, y) \in \mathbb{R}^2 \mid y = -3x\}$. We check the subspace criteria:</p>
+        <ol>
+            <li><strong>Zero Vector:</strong> $(0, 0)$ is in $S$ since $0 = -3(0)$. Yes.</li>
+            <li><strong>Closure under Addition:</strong> Let $\mathbf{u} = (x_1, y_1) \in S$ (so $y_1 = -3x_1$) and $\mathbf{v} = (x_2, y_2) \in S$ (so $y_2 = -3x_2$).
+            Consider $\mathbf{u} + \mathbf{v} = (x_1+x_2, y_1+y_2)$. Let $X = x_1+x_2, Y = y_1+y_2$.
+            Is $Y = -3X$? Yes, because $Y = y_1+y_2 = -3x_1 - 3x_2 = -3(x_1+x_2) = -3X$. Yes.</li>
+            <li><strong>Closure under Scalar Multiplication:</strong> Let $\mathbf{u} = (x_1, y_1) \in S$ (so $y_1 = -3x_1$) and $c$ be a scalar.
+            Consider $c\mathbf{u} = (cx_1, cy_1)$. Let $X=cx_1, Y=cy_1$.
+            Is $Y = -3X$? Yes, because $Y = cy_1 = c(-3x_1) = -3(cx_1) = -3X$. Yes.</li>
+        </ol>
+        <p>Since all conditions hold, $S$ **is** a subspace of $\mathbb{R}^2$.</p>
+
+        <!-- ============================================ -->
+        <h2>Topic: Linear Independence (from Tutorial Sheet 5)</h2>
+        <!-- ============================================ -->
+
+        <h3 class="question-title">Question (Sheet 5, Q6)</h3>
+        <p>If $\{u_1, u_2, u_3\}$ is a linearly independent set of vectors, is $\{u_1, u_1 + u_2, u_1 + u_2 - u_3\}$ linearly independent? Justify your answer.</p>
+
+        <h3 class="solution-title">Solution</h3>
+        <p>Set a linear combination to zero:
+        $c_1(u_1) + c_2(u_1 + u_2) + c_3(u_1 + u_2 - u_3) = \mathbf{0}$.<br/>
+        Rearrange by $u_i$:
+        $(c_1 + c_2 + c_3)u_1 + (c_2 + c_3)u_2 + (-c_3)u_3 = \mathbf{0}$.<br/>
+        Since $\{u_1, u_2, u_3\}$ is linearly independent, all coefficients must be zero:
+        $c_1 + c_2 + c_3 = 0$<br/>
+        $c_2 + c_3 = 0$<br/>
+        $-c_3 = 0$<br/>
+        From the third equation, $c_3 = 0$. Substituting into the second gives $c_2 = 0$. Substituting $c_2=0, c_3=0$ into the first gives $c_1=0$.
+        Since the only solution is $c_1 = c_2 = c_3 = 0$, the set $\{u_1, u_1 + u_2, u_1 + u_2 - u_3\}$ **is** linearly independent.</p>
+
+        <!-- ============================================ -->
+        <h2>Topic: Basis and Dimension (from Tutorial Sheet 6)</h2>
+        <!-- ============================================ -->
+
+        <h3 class="question-title">Question (Sheet 6, Q7)</h3>
+        <p>Find the basis and dimension of the subspace $S = \{\mathbf{x} \mid A\mathbf{x} = \mathbf{0}\}$, where</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{A = \\bm{ -1 & 0 & -1 & 2 \\\\ 2 & 0 & 2 & 0 \\\\ 1 & 0 & 1 & -1 }}')"
+             data-latex="A = \bm{ -1 & 0 & -1 & 2 \\ 2 & 0 & 2 & 0 \\ 1 & 0 & 1 & -1 }"
+             title="Click to copy LaTeX">
+             $$ A = \bm{ -1 & 0 & -1 & 2 \\ 2 & 0 & 2 & 0 \\ 1 & 0 & 1 & -1 } $$
+        </div>
+
+        <h3 class="solution-title">Solution</h3>
+        <p>Find the RREF of $[A|\mathbf{0}]$:</p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{\\left[ \\begin{array}{cccc|c} -1 & 0 & -1 & 2 & 0 \\\\ 2 & 0 & 2 & 0 & 0 \\\\ 1 & 0 & 1 & -1 & 0 \\end{array} \\right] \\xrightarrow{RREF} \\left[ \\begin{array}{cccc|c} 1 & 0 & 1 & 0 & 0 \\\\ 0 & 0 & 0 & 1 & 0 \\\\ 0 & 0 & 0 & 0 & 0 \\end{array} \\right]}')"
+             data-latex="\left[ \begin{array}{cccc|c} -1 & 0 & -1 & 2 & 0 \\ 2 & 0 & 2 & 0 & 0 \\ 1 & 0 & 1 & -1 & 0 \end{array} \right] \xrightarrow{\text{RREF}} \left[ \begin{array}{cccc|c} 1 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 & 0 \end{array} \right]"
+             title="Click to copy LaTeX">
+             $$ \left[ \begin{array}{cccc|c} -1 & 0 & -1 & 2 & 0 \\ 2 & 0 & 2 & 0 & 0 \\ 1 & 0 & 1 & -1 & 0 \end{array} \right] \xrightarrow{\text{RREF}} \left[ \begin{array}{cccc|c} 1 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 & 0 \end{array} \right] $$
+        </div>
+        <p>The system is $x_1 + x_3 = 0 \implies x_1 = -x_3$, and $x_4 = 0$.<br/>
+        Free variables are $x_2=s, x_3=t$.<br/>
+        Solution vector:
+        $$ \mathbf{x} = \bm{ x_1 \\ x_2 \\ x_3 \\ x_4 } = \bm{ -t \\ s \\ t \\ 0 } = s \bm{ 0 \\ 1 \\ 0 \\ 0 } + t \bm{ -1 \\ 0 \\ 1 \\ 0 } $$
+        </p>
+        <p>Basis for $S = \text{Null}(A)$ is $\left\{ \bm{ 0 \\ 1 \\ 0 \\ 0 }, \bm{ -1 \\ 0 \\ 1 \\ 0 } \right\}$.<br/>
+        Dimension of $S = 2$.</p>
+
+        <!-- ============================================ -->
+        <h2>Topic: Change of Basis and Coordinate Vectors (from Tutorial Sheet 7)</h2>
+        <!-- ============================================ -->
+
+        <h3 class="question-title">Question (Sheet 7, Q6)</h3>
+        <p>Let $B = \{1, x, x^2\}$ and $B' = \{1, 1+x, 1+x+x^2\}$ be two ordered bases of $P_2$. Find the coordinate vectors $\mathbf{a}$ and $\mathbf{a'}$ of the polynomial $p(x) = 3x^2 - 7x + 2$ with respect to the bases $B$ and $B'$ respectively. Also find the transition matrix $P$ from $B'$ to $B$ and show that $\mathbf{a} = P\mathbf{a'}$.</p>
+
+        <h3 class="solution-title">Solution</h3>
+        <p>$p(x) = 2 - 7x + 3x^2$.</p>
+        <p><strong>1. Coord vector $\mathbf{a}$ relative to $B = \{1, x, x^2\}$:</strong><br/>
+        $p(x) = 2(1) + (-7)(x) + 3(x^2)$.<br/>
+        $\mathbf{a} = [p(x)]_B = \bm{ 2 \\ -7 \\ 3 }$.</p>
+
+        <p><strong>2. Coord vector $\mathbf{a'}$ relative to $B' = \{1, 1+x, 1+x+x^2\}$:</strong><br/>
+        $p(x) = c'_1(1) + c'_2(1+x) + c'_3(1+x+x^2)$<br/>
+        $2 - 7x + 3x^2 = (c'_1 + c'_2 + c'_3) + (c'_2 + c'_3)x + c'_3x^2$.<br/>
+        Comparing coeffs: $c'_3=3$, $c'_2+c'_3=-7 \implies c'_2=-10$, $c'_1+c'_2+c'_3=2 \implies c'_1-10+3=2 \implies c'_1=9$.<br/>
+        $\mathbf{a'} = [p(x)]_{B'} = \bm{ 9 \\ -10 \\ 3 }$.</p>
+
+        <p><strong>3. Transition matrix $P$ from $B'$ to $B$ ($P_{B' \to B}$):</strong><br/>
+        Columns are coords of $B'$ vectors relative to $B$.<br/>
+        $[1]_B = \bm{1\\0\\0}$, $[1+x]_B = \bm{1\\1\\0}$, $[1+x+x^2]_B = \bm{1\\1\\1}$.<br/>
+        $P = \begin{bmatrix} 1 & 1 & 1 \\ 0 & 1 & 1 \\ 0 & 0 & 1 \end{bmatrix}$.</p>
+
+        <p><strong>4. Verify $\mathbf{a} = P\mathbf{a'}$:</strong></p>
+        <div class="formula-container"
+             onclick="copyFormulaLatex(this, '\\color{white}{P\\mathbf{a\'} = \\bm{ 1 & 1 & 1 \\\\ 0 & 1 & 1 \\\\ 0 & 0 & 1 } \\bm{ 9 \\\\ -10 \\\\ 3 } = \\bm{ 9-10+3 \\\\ -10+3 \\\\ 3 } = \\bm{ 2 \\\\ -7 \\\\ 3 }}')"
+             data-latex="P\mathbf{a'} = \bm{ 1 & 1 & 1 \\ 0 & 1 & 1 \\ 0 & 0 & 1 } \bm{ 9 \\ -10 \\ 3 } = \bm{ 9-10+3 \\ -10+3 \\ 3 } = \bm{ 2 \\ -7 \\ 3 }"
+             title="Click to copy LaTeX">
+             $$ P\mathbf{a'} = \bm{ 1 & 1 & 1 \\ 0 & 1 & 1 \\ 0 & 0 & 1 } \bm{ 9 \\ -10 \\ 3 } = \bm{ 9-10+3 \\ -10+3 \\ 3 } = \bm{ 2 \\ -7 \\ 3 } $$
+        </div>
+        <p>This equals $\mathbf{a}$. Verified.</p>
+
+        <!-- ============================================ -->
+        <h2>Topic: Linear Transformations (from Tutorial Sheet 8)</h2>
+        <!-- ============================================ -->
+
+        <h3 class="question-title">Question (Sheet 8, Q3)</h3>
+        <p>Let $L: P_2 \to P_2$ be the linear transformation defined by $L(at^2 + bt + c) = (a+c)t^2 + (b+c)t$.<br/>
+        (a) Find a basis for ker($L$). (b) Find a basis for range($L$).</p>
+
+        <h3 class="solution-title">Solution</h3>
+        <p><strong>(a) Kernel of L:</strong> Find $p(t)=at^2+bt+c$ such that $L(p(t)) = 0$.<br/>
+        $(a+c)t^2 + (b+c)t = 0t^2 + 0t + 0$.<br/>
+        $a+c=0 \implies a=-c$.<br/>
+        $b+c=0 \implies b=-c$.<br/>
+        Polynomials in kernel are $p(t) = -ct^2 -ct + c = c(-t^2 - t + 1)$.<br/>
+        Basis for ker($L$) = $\{-t^2 - t + 1\}$. Nullity = 1.</p>
+
+        <p><strong>(b) Range of L:</strong> Find span of images of basis vectors. Use std basis $B=\{1, t, t^2\}$ for $P_2$.<br/>
+        $L(1) = (0+1)t^2 + (0+1)t = t^2+t$. ($a=0, b=0, c=1$)<br/>
+        $L(t) = (0+0)t^2 + (1+0)t = t$. ($a=0, b=1, c=0$)<br/>
+        $L(t^2) = (1+0)t^2 + (0+0)t = t^2$. ($a=1, b=0, c=0$)<br/>
+        Range = span$\{t^2+t, t, t^2\}$.<br/>
+        Check dependence: $t^2 = (t^2+t) - t$. The set is dependent.<br/>
+        The set $\{t, t^2\}$ is linearly independent and spans the same space.<br/>
+        Basis for range($L$) = $\{t, t^2\}$. Rank = 2.</p>
+        <p>(Check Rank-Nullity: dim($P_2$) = 3. Nullity + Rank = 1 + 2 = 3. Correct.)</p>
+
+        <!-- ============================================ -->
+        <h2>Formula Summary</h2>
+        <!-- ============================================ -->
+
+        <ol>
+            <li><strong>Gauss-Jordan/RREF:</strong> Goal is leading 1s, zeros above/below leading 1s.</li>
+            <li><strong>Homogeneous System $A\mathbf{x} = \mathbf{0}$:**
+                <ul>
+                    <li>Always has trivial solution $\mathbf{x}=\mathbf{0}$.</li>
+                    <li>Non-trivial solutions iff $\det(A) = 0$ (square $A$).</li>
+                    <li>Non-trivial solutions iff free variables exist in RREF.</li>
+                </ul>
+            </li>
+            <li><strong>Eigenvalues/Eigenvectors:</strong>
+                <ul>
+                    <li>$A\mathbf{x} = \lambda \mathbf{x}$ ($\mathbf{x} \ne \mathbf{0}$).</li>
+                    <li>Characteristic Eq: $\det(A - \lambda I) = 0$.</li>
+                    <li>Eigenspace for $\lambda$: Null space of $(A - \lambda I)$.</li>
+                </ul>
+            </li>
+             <li><strong>Subspace $S$ of $V$:**
+                <ul>
+                    <li>$\mathbf{0} \in S$.</li>
+                    <li>Closed under addition.</li>
+                    <li>Closed under scalar multiplication.</li>
+                </ul>
+             </li>
+             <li><strong>Span:</strong> span$\{v_1, ..., v_k\}$ = set of all linear combinations $c_1v_1 + ... + c_kv_k$.</li>
+             <li><strong>Linear Independence:</strong> $\{v_1, ..., v_k\}$ is linearly independent if $c_1v_1 + ... + c_kv_k = \mathbf{0}$ implies $c_1=...=c_k=0$.</li>
+             <li><strong>Basis:</strong> A linearly independent spanning set.</li>
+             <li><strong>Dimension:</strong> Number of vectors in a basis.</li>
+             <li><strong>Coordinate Vector:</strong> $[v]_B = \bm{ c_1 \\ \vdots \\ c_n }$ if $v = c_1b_1 + ... + c_nb_n$ for basis $B=\{b_1,...,b_n\}$.</li>
+             <li><strong>Transition Matrix $P_{B' \to B}$:** Columns are $[b'_j]_B$. Relation: $[v]_B = P_{B' \to B} [v]_{B'}$.</li>
+             <li><strong>Linear Transformation $L: V \to W$:** $L(\mathbf{u}+\mathbf{v}) = L(\mathbf{u})+L(\mathbf{v})$ and $L(c\mathbf{u}) = cL(\mathbf{u})$.</li>
+             <li><strong>Kernel (Null Space):** ker($L$) = $\{\mathbf{v} \in V \mid L(\mathbf{v}) = \mathbf{0}_W\}$.</li>
+             <li><strong>Range (Image):** range($L$) = $\{L(\mathbf{v}) \mid \mathbf{v} \in V\}$.</li>
+             <li><strong>Rank-Nullity Theorem:** dim($V$) = dim(ker($L$)) + dim(range($L$)).</li>
+        </ol>
+
+    </main>
+
+    <footer>
+        <!-- Optional: Add footer text if needed -->
+    </footer>
+
+     <!-- Font Size Control Icons HTML -->
+     <div class="font-control">
+         <span class="font-control-icon" id="fontMinusBtn" title="Decrease font size">-</span>
+         <span class="font-control-icon" id="fontPlusBtn" title="Increase font size">+</span>
+     </div>
+     <div id="fontSizeDisplay">10px</div> <!-- Initial size display -->
+
+    <script>
+        // --- Formula Copy Function ---
+        function copyFormulaLatex(element, latexStringWithColor) {
+            // Extract the original LaTeX from data-latex attribute for copying
+            const originalLatex = element.getAttribute('data-latex');
+             if (!originalLatex) {
+                 console.error('No original LaTeX data found in data-latex attribute. Using onclick value.');
+                 // Fallback to using the colored string if needed, but remove the color command
+                 latexStringWithColor = latexStringWithColor.replace('\\color{white}{', '').slice(0, -1).trim();
+                 navigator.clipboard.writeText(latexStringWithColor).then(() => {
+                     element.classList.add('copied');
+                     const originalTitle = element.title;
+                     element.title = 'Copied: ' + latexStringWithColor;
+                     setTimeout(() => { element.classList.remove('copied'); element.title = originalTitle; }, 1500);
+                 }).catch(err => { console.error('Fallback copy failed:', err); });
+                 return;
+             }
+
+            navigator.clipboard.writeText(originalLatex).then(() => {
+                element.classList.add('copied');
+                const originalTitle = element.title;
+                element.title = 'Copied: ' + originalLatex; // Show what was copied
+                setTimeout(() => {
+                    element.classList.remove('copied');
+                    element.title = originalTitle; // Restore original title
+                 }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy LaTeX: ', err);
+                const originalTitle = element.title;
+                element.title = 'Copy failed!';
+                 setTimeout(() => { element.title = originalTitle; }, 1500);
+            });
+        }
+
+        // --- Font Size Control & Hold Functionality ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const minusBtn = document.getElementById('fontMinusBtn');
+            const plusBtn = document.getElementById('fontPlusBtn');
+            const display = document.getElementById('fontSizeDisplay');
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body; // Target body for transition class
+
+            // Configuration
+            let currentSize = 10; // Initial size set to 10px
+            const minSize = 10;
+            const maxSize = 28; // Adjust max size if needed
+            const step = 1;
+            let displayTimeout = null;
+            let holdTimeout = null;
+            let holdInterval = null;
+            const initialHoldDelay = 400; // ms before repeat starts
+            const repeatInterval = 100;  // ms between repeats while holding
+            const mathJaxDebounceDelay = 350; // ms to wait after last change before re-typesetting
+
+            // --- Debounce Function ---
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => { clearTimeout(timeout); func(...args); };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // --- Debounced MathJax Typesetting ---
+            const queueMathJaxTypeset = debounce(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    console.log("Debounced: Typesetting MathJax");
+                    const mainContent = document.querySelector('main');
+                    const targetElement = mainContent || bodyEl;
+                    MathJax.typesetPromise([targetElement]).catch((err) => console.error('MathJax typesetting error:', err));
+                 }
+            }, mathJaxDebounceDelay);
+
+            // --- Update Font Size and Display ---
+            function updateFontSize(newSize) {
+                const oldSize = currentSize;
+                currentSize = Math.max(minSize, Math.min(maxSize, newSize));
+
+                if (currentSize !== oldSize) {
+                    htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                    display.textContent = currentSize + 'px';
+                    display.classList.add('visible');
+
+                    if (displayTimeout) { clearTimeout(displayTimeout); }
+                    displayTimeout = setTimeout(() => {
+                        display.classList.remove('visible');
+                        displayTimeout = null;
+                    }, 1500);
+                    // Only queue MathJax typeset at the end of holding
+                    return true;
+                }
+                return false;
+            }
+
+            // --- Stop Holding Action ---
+            function stopHolding() {
+                bodyEl.classList.remove('no-font-transition');
+                if (holdTimeout) { clearTimeout(holdTimeout); holdTimeout = null; }
+                if (holdInterval) { clearInterval(holdInterval); holdInterval = null; }
+                // When holding stops, trigger MathJax update
+                queueMathJaxTypeset();
+            }
+
+            // --- Start Holding Action ---
+            function startHolding(direction) {
+                bodyEl.classList.add('no-font-transition');
+                updateFontSize(currentSize + direction * step); // Initial action immediately
+                stopHolding(); // Clear previous timers before starting new ones
+
+                holdTimeout = setTimeout(() => {
+                    holdInterval = setInterval(() => {
+                        if (!updateFontSize(currentSize + direction * step)) {
+                            stopHolding();
+                        }
+                    }, repeatInterval);
+                }, initialHoldDelay);
+            }
+
+            // --- Event Listeners ---
+            if (minusBtn && plusBtn && display) {
+                minusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(-1); });
+                plusBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startHolding(1); });
+                window.addEventListener('mouseup', stopHolding);
+                minusBtn.addEventListener('mouseleave', stopHolding);
+                plusBtn.addEventListener('mouseleave', stopHolding);
+                window.addEventListener('touchend', stopHolding); // Handle touch release
+
+                htmlEl.style.setProperty('--base-font-size', currentSize + 'px');
+                display.textContent = currentSize + 'px';
+                console.log("Font control initialized. Current size:", currentSize);
+                 if (window.MathJax) {
+                     MathJax.startup.promise.then(() => {
+                         console.log("Queueing initial MathJax typeset");
+                         queueMathJaxTypeset();
+                     });
+                 }
+            } else {
+                console.error("Font control elements not found!");
+            }
+
+            // --- Horizontal Scroll Redirect for Formula Containers ---
+             const formulaContainers = document.querySelectorAll('.formula-container');
+             formulaContainers.forEach(container => {
+                 container.addEventListener('wheel', function(event) {
+                     const isScrollableHorizontally = this.scrollWidth > this.clientWidth;
+                     const isVerticalScroll = event.deltaY !== 0 && event.deltaX === 0;
+                     if (isScrollableHorizontally && isVerticalScroll) {
+                         event.preventDefault();
+                         this.scrollLeft += event.deltaY;
+                     }
+                 }, { passive: false });
+             });
+             console.log("Horizontal scroll override applied to formula containers.");
+
+        });
+    </script>
+
+</body>
+</html>
